@@ -59,7 +59,7 @@ export default {
 
 	computed: {
 		warningHtml() {
-			const securityUrl = 'https://api.onlyoffice.com/docs/docs-api/get-started/how-it-works/security/'
+			const securityUrl = 'https://github.com/Euro-Office/eurooffice-nextcloud'
 			return t(
 				'eurooffice',
 				'To ensure the security of important parameters in Euro-Office requests, please set a Secret Key on the Settings page. To learn more, <a href="{url}" target="_blank">click here</a>.',

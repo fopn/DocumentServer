@@ -28,7 +28,7 @@
  */
 (function(OCA) {
 
-	OCA.Onlyoffice = Object.assign({}, OCA.Onlyoffice)
+	OCA.Eurooffice = Object.assign({}, OCA.Eurooffice)
 
 	const callMobileMessage = function(messageName, attributes) {
 		let message = messageName
@@ -64,7 +64,7 @@
 		window.postMessage(message)
 	}
 
-	OCA.Onlyoffice.directEditor = {
+	OCA.Eurooffice.directEditor = {
 		close() {
 			callMobileMessage('close')
 		},
@@ -77,10 +77,10 @@
 		const directEditorError = document.getElementById('directEditorError')
 
 		if (directEditorError) {
-			OCA.Onlyoffice.directEditor.loaded()
+			OCA.Eurooffice.directEditor.loaded()
 			const directEditorErrorButton = document.getElementById('directEditorErrorButton')
 			directEditorErrorButton.addEventListener('click', function() {
-				OCA.Onlyoffice.directEditor.close()
+				OCA.Eurooffice.directEditor.close()
 			})
 		}
 	}

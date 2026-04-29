@@ -28,13 +28,13 @@
  */
 (function(OCA) {
 
-	OCA.Onlyoffice = Object.assign({}, OCA.Onlyoffice)
+	OCA.Eurooffice = Object.assign({}, OCA.Eurooffice)
 
 	if (!window.AscDesktopEditor) {
 		return
 	}
 
-	OCA.Onlyoffice.Desktop = true
+	OCA.Eurooffice.Desktop = true
 
 	if (location.pathname.indexOf(_oc_appswebroots.dashboard) !== -1) {
 		location.pathname = location.pathname.split(_oc_appswebroots.dashboard)[0] + _oc_appswebroots.files + '/'

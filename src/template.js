@@ -29,24 +29,24 @@
  */
 (function($, OC) {
 
-	OCA.Onlyoffice = Object.assign({
+	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
 		templates: null,
-	}, OCA.Onlyoffice)
+	}, OCA.Eurooffice)
 
-	OCA.Onlyoffice.OpenTemplatePicker = function(name, extension, type) {
+	OCA.Eurooffice.OpenTemplatePicker = function(name, extension, type) {
 
 		$('#eurooffice-template-picker').remove()
 
-		$.get(OC.filePath(OCA.Onlyoffice.AppName, 'templates', 'templatePicker.html'),
+		$.get(OC.filePath(OCA.Eurooffice.AppName, 'templates', 'templatePicker.html'),
 			function(tmpl) {
 				const $tmpl = $(tmpl)
 				const dialog = $tmpl.octemplate({
 					dialog_name: 'eurooffice-template-picker',
-					dialog_title: t(OCA.Onlyoffice.AppName, 'Select template'),
+					dialog_title: t(OCA.Eurooffice.AppName, 'Select template'),
 				})
 
-				OCA.Onlyoffice.AttachTemplates(dialog, type)
+				OCA.Eurooffice.AttachTemplates(dialog, type)
 
 				$('body').append(dialog)
 
@@ -60,12 +60,12 @@
 							$(this).ocdialog('close')
 						},
 					}, {
-						text: t(OCA.Onlyoffice.AppName, 'Create'),
+						text: t(OCA.Eurooffice.AppName, 'Create'),
 						classes: 'primary',
 						click() {
 							const templateId = this.dataset.templateId
 							const fileList = OCA.Files.App.fileList
-							OCA.Onlyoffice.CreateFile(name + extension, fileList, templateId)
+							OCA.Eurooffice.CreateFile(name + extension, fileList, templateId)
 							$(this).ocdialog('close')
 						},
 					}],
@@ -73,12 +73,12 @@
 			})
 	}
 
-	OCA.Onlyoffice.GetTemplates = function() {
-		if (OCA.Onlyoffice.templates != null) {
+	OCA.Eurooffice.GetTemplates = function() {
+		if (OCA.Eurooffice.templates != null) {
 			return
 		}
 
-		$.get(OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/template'),
+		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/template'),
 			function onSuccess(response) {
 				if (response.error) {
 					OC.Notification.show(response.error, {
@@ -88,18 +88,18 @@
 					return
 				}
 
-				OCA.Onlyoffice.templates = response
+				OCA.Eurooffice.templates = response
 
 			})
 	}
 
-	OCA.Onlyoffice.AddTemplate = function(file, callback) {
+	OCA.Eurooffice.AddTemplate = function(file, callback) {
 		const data = new FormData()
 		data.append('file', file)
 
 		$.ajax({
 			method: 'POST',
-			url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/template'),
+			url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/template'),
 			data,
 			processData: false,
 			contentType: false,
@@ -114,10 +114,10 @@
 		})
 	}
 
-	OCA.Onlyoffice.DeleteTemplate = function(templateId, callback) {
+	OCA.Eurooffice.DeleteTemplate = function(templateId, callback) {
 		$.ajax({
 			method: 'DELETE',
-			url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/template?templateId={templateId}',
+			url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/template?templateId={templateId}',
 				{
 					templateId,
 				}),
@@ -129,10 +129,10 @@
 		})
 	}
 
-	OCA.Onlyoffice.AttachTemplates = function(dialog, type) {
+	OCA.Eurooffice.AttachTemplates = function(dialog, type) {
 		const emptyItem = dialog[0].querySelector('.eurooffice-template-item')
 
-		OCA.Onlyoffice.templates.forEach(template => {
+		OCA.Eurooffice.templates.forEach(template => {
 			if (template.type !== type) {
 				return
 			}
@@ -152,14 +152,14 @@
 		emptyItem.querySelector('input').id = 'template_picker-0'
 		emptyItem.querySelector('input').checked = true
 		emptyItem.querySelector('img').src = OC.generateUrl('/core/img/filetypes/x-office-' + type + '.svg')
-		emptyItem.querySelector('p').textContent = t(OCA.Onlyoffice.AppName, 'Empty')
+		emptyItem.querySelector('p').textContent = t(OCA.Eurooffice.AppName, 'Empty')
 		emptyItem.onclick = function() {
 			dialog[0].dataset.templateId = '0'
 		}
 	}
 
-	OCA.Onlyoffice.AttachItemTemplate = function(template) {
-		$.get(OC.filePath(OCA.Onlyoffice.AppName, 'templates', 'templateItem.html'),
+	OCA.Eurooffice.AttachItemTemplate = function(template) {
+		$.get(OC.filePath(OCA.Eurooffice.AppName, 'templates', 'templateItem.html'),
 			function(item) {
 				item = $(item)
 
@@ -171,8 +171,8 @@
 			})
 	}
 
-	OCA.Onlyoffice.TemplateExist = function(type) {
-		const isExist = OCA.Onlyoffice.templates.some((template) => {
+	OCA.Eurooffice.TemplateExist = function(type) {
+		const isExist = OCA.Eurooffice.templates.some((template) => {
 			return template.type === type
 		})
 

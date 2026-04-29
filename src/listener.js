@@ -28,32 +28,32 @@
  */
 (function(OCA) {
 
-	OCA.Onlyoffice = Object.assign({
+	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
 		frameSelector: null,
 		titleBase: window.document.title,
 		favIconBase: $('link[rel="icon"]').attr('href'),
-	}, OCA.Onlyoffice)
+	}, OCA.Eurooffice)
 
-	OCA.Onlyoffice.onRequestClose = function() {
+	OCA.Eurooffice.onRequestClose = function() {
 
-		$(OCA.Onlyoffice.frameSelector).remove()
+		$(OCA.Eurooffice.frameSelector).remove()
 
 		if (OCA.Viewer && OCA.Viewer.close) {
 			OCA.Viewer.close()
 		}
 
-		if (OCA.Onlyoffice.CloseEditor) {
-			OCA.Onlyoffice.CloseEditor()
+		if (OCA.Eurooffice.CloseEditor) {
+			OCA.Eurooffice.CloseEditor()
 		}
 	}
 
-	OCA.Onlyoffice.onRequestSaveAs = function(saveData) {
+	OCA.Eurooffice.onRequestSaveAs = function(saveData) {
 
-		OC.dialogs.filepicker(t(OCA.Onlyoffice.AppName, 'Save as'),
+		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Save as'),
 			function(fileDir) {
 				saveData.dir = fileDir
-				$(OCA.Onlyoffice.frameSelector)[0].contentWindow.OCA.Onlyoffice.editorSaveAs(saveData)
+				$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSaveAs(saveData)
 			},
 			false,
 			'httpd/unix-directory',
@@ -62,65 +62,65 @@
 			saveData.dir)
 	}
 
-	OCA.Onlyoffice.onRequestInsertImage = function(imageMimes) {
-		OC.dialogs.filepicker(t(OCA.Onlyoffice.AppName, 'Insert image'),
-			$(OCA.Onlyoffice.frameSelector)[0].contentWindow.OCA.Onlyoffice.editorInsertImage,
+	OCA.Eurooffice.onRequestInsertImage = function(imageMimes) {
+		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Insert image'),
+			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorInsertImage,
 			false,
 			imageMimes,
 			true)
 	}
 
-	OCA.Onlyoffice.onRequestMailMergeRecipients = function(recipientMimes) {
-		OC.dialogs.filepicker(t(OCA.Onlyoffice.AppName, 'Select recipients'),
-			$(OCA.Onlyoffice.frameSelector)[0].contentWindow.OCA.Onlyoffice.editorSetRecipient,
+	OCA.Eurooffice.onRequestMailMergeRecipients = function(recipientMimes) {
+		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select recipients'),
+			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSetRecipient,
 			false,
 			recipientMimes,
 			true)
 	}
 
-	OCA.Onlyoffice.onRequestSelectDocument = function(revisedMimes, documentSelectionType) {
+	OCA.Eurooffice.onRequestSelectDocument = function(revisedMimes, documentSelectionType) {
 		let title
 		switch (documentSelectionType) {
 		case 'combine':
-			title = t(OCA.Onlyoffice.AppName, 'Select file to combine')
+			title = t(OCA.Eurooffice.AppName, 'Select file to combine')
 			break
 		case 'compare':
-			title = t(OCA.Onlyoffice.AppName, 'Select file to compare')
+			title = t(OCA.Eurooffice.AppName, 'Select file to compare')
 			break
 		case 'insert-text':
-			title = t(OCA.Onlyoffice.AppName, 'Select file to insert text')
+			title = t(OCA.Eurooffice.AppName, 'Select file to insert text')
 			break
 		default:
-			title = t(OCA.Onlyoffice.AppName, 'Select file')
+			title = t(OCA.Eurooffice.AppName, 'Select file')
 		}
 		OC.dialogs.filepicker(title,
-			$(OCA.Onlyoffice.frameSelector)[0].contentWindow.OCA.Onlyoffice.editorSetRequested.bind({ documentSelectionType }),
+			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSetRequested.bind({ documentSelectionType }),
 			false,
 			revisedMimes,
 			true)
 	}
 
-	OCA.Onlyoffice.onRequestReferenceSource = function(referenceSourceMimes) {
-		OC.dialogs.filepicker(t(OCA.Onlyoffice.AppName, 'Select data source'),
-			$(OCA.Onlyoffice.frameSelector)[0].contentWindow.OCA.Onlyoffice.editorReferenceSource,
+	OCA.Eurooffice.onRequestReferenceSource = function(referenceSourceMimes) {
+		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select data source'),
+			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorReferenceSource,
 			false,
 			referenceSourceMimes,
 			true)
 	}
 
-	OCA.Onlyoffice.onDocumentReady = function() {
-		OCA.Onlyoffice.setViewport()
+	OCA.Eurooffice.onDocumentReady = function() {
+		OCA.Eurooffice.setViewport()
 	}
 
-	OCA.Onlyoffice.changeFavicon = function(favicon) {
+	OCA.Eurooffice.changeFavicon = function(favicon) {
 		$('link[rel="icon"]').attr('href', favicon)
 	}
 
-	OCA.Onlyoffice.setViewport = function() {
+	OCA.Eurooffice.setViewport = function() {
 		document.querySelector('meta[name="viewport"]').setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0')
 	}
 
-	OCA.Onlyoffice.onShowMessage = function(messageObj) {
+	OCA.Eurooffice.onShowMessage = function(messageObj) {
 		switch (messageObj.type) {
 		case 'success':
 			OCP.Toast.success(messageObj.message, messageObj.props)
@@ -132,65 +132,65 @@
 	}
 
 	window.addEventListener('message', function(event) {
-		if (!$(OCA.Onlyoffice.frameSelector).length
-			|| $(OCA.Onlyoffice.frameSelector)[0].contentWindow !== event.source
+		if (!$(OCA.Eurooffice.frameSelector).length
+			|| $(OCA.Eurooffice.frameSelector)[0].contentWindow !== event.source
 			|| !event.data.method) {
 			return
 		}
 		switch (event.data.method) {
 		case 'editorRequestClose':
-			OCA.Onlyoffice.onRequestClose()
+			OCA.Eurooffice.onRequestClose()
 			break
 		case 'editorRequestSharingSettings':
-			if (OCA.Onlyoffice.OpenShareDialog) {
-				OCA.Onlyoffice.OpenShareDialog()
+			if (OCA.Eurooffice.OpenShareDialog) {
+				OCA.Eurooffice.OpenShareDialog()
 			}
 			break
 		case 'onRefreshVersionsDialog':
-			if (OCA.Onlyoffice.RefreshVersionsDialog) {
-				OCA.Onlyoffice.RefreshVersionsDialog()
+			if (OCA.Eurooffice.RefreshVersionsDialog) {
+				OCA.Eurooffice.RefreshVersionsDialog()
 			}
 			break
 		case 'editorRequestSaveAs':
-			OCA.Onlyoffice.onRequestSaveAs(event.data.param)
+			OCA.Eurooffice.onRequestSaveAs(event.data.param)
 			break
 		case 'editorRequestInsertImage':
-			OCA.Onlyoffice.onRequestInsertImage(event.data.param)
+			OCA.Eurooffice.onRequestInsertImage(event.data.param)
 			break
 		case 'editorRequestMailMergeRecipients':
-			OCA.Onlyoffice.onRequestMailMergeRecipients(event.data.param)
+			OCA.Eurooffice.onRequestMailMergeRecipients(event.data.param)
 			break
 		case 'editorRequestSelectDocument':
-			OCA.Onlyoffice.onRequestSelectDocument(event.data.param, event.data.documentSelectionType)
+			OCA.Eurooffice.onRequestSelectDocument(event.data.param, event.data.documentSelectionType)
 			break
 		case 'editorRequestReferenceSource':
-			OCA.Onlyoffice.onRequestReferenceSource(event.data.param)
+			OCA.Eurooffice.onRequestReferenceSource(event.data.param)
 			break
 		case 'onDocumentReady':
-			OCA.Onlyoffice.onDocumentReady(event.data.param)
+			OCA.Eurooffice.onDocumentReady(event.data.param)
 			break
 		case 'changeFavicon':
-			OCA.Onlyoffice.changeFavicon(event.data.param)
+			OCA.Eurooffice.changeFavicon(event.data.param)
 			break
 		case 'onShowMessage':
-			OCA.Onlyoffice.onShowMessage(event.data.param)
+			OCA.Eurooffice.onShowMessage(event.data.param)
 			break
 		}
 	}, false)
 
 	window.addEventListener('popstate', function(event) {
-		if ($(OCA.Onlyoffice.frameSelector).length) {
-			OCA.Onlyoffice.onRequestClose()
+		if ($(OCA.Eurooffice.frameSelector).length) {
+			OCA.Eurooffice.onRequestClose()
 		}
 	})
 
 	const mutationObserver = new MutationObserver(mutationRecords => {
 		if (mutationRecords[0] && mutationRecords[0].removedNodes) {
 			mutationRecords[0].removedNodes.forEach((node) => {
-				if (node.id && '#' + node.id === OCA.Onlyoffice.frameSelector) {
-					OCA.Onlyoffice.changeFavicon(OCA.Onlyoffice.favIconBase)
-					window.document.title = OCA.Onlyoffice.titleBase
-					OCA.Onlyoffice.frameSelector = null
+				if (node.id && '#' + node.id === OCA.Eurooffice.frameSelector) {
+					OCA.Eurooffice.changeFavicon(OCA.Eurooffice.favIconBase)
+					window.document.title = OCA.Eurooffice.titleBase
+					OCA.Eurooffice.frameSelector = null
 				}
 			  })
 		}

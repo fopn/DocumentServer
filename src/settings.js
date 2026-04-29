@@ -33,9 +33,9 @@ import { defineAsyncComponent } from 'vue'
 (function($, OC) {
 
 	$(document).ready(function() {
-		OCA.Onlyoffice = Object.assign({}, OCA.Onlyoffice)
-		if (!OCA.Onlyoffice.AppName) {
-			OCA.Onlyoffice = {
+		OCA.Eurooffice = Object.assign({}, OCA.Eurooffice)
+		if (!OCA.Eurooffice.AppName) {
+			OCA.Eurooffice = {
 				AppName: 'eurooffice',
 			}
 		}
@@ -108,7 +108,7 @@ import { defineAsyncComponent } from 'vue'
 							multiple: true,
 							separator: '|',
 							toggleSelect: true,
-							placeholder: t(OCA.Onlyoffice.AppName, 'Select tag'),
+							placeholder: t(OCA.Eurooffice.AppName, 'Select tag'),
 							query: _.debounce(function(query) {
 								query.callback({
 									results: OC.SystemTags.collection.filterByName(query.term),
@@ -159,7 +159,7 @@ import { defineAsyncComponent } from 'vue'
 
 		const connectionError = document.getElementById('euroofficeSettingsState').value
 		if (connectionError !== '') {
-			OCP.Toast.error(t(OCA.Onlyoffice.AppName, 'Error when trying to connect') + ' (' + connectionError + ')')
+			OCP.Toast.error(t(OCA.Eurooffice.AppName, 'Error when trying to connect') + ' (' + connectionError + ')')
 		}
 
 		$('#euroofficeAddrSave').click(function() {
@@ -179,7 +179,7 @@ import { defineAsyncComponent } from 'vue'
 
 			$.ajax({
 				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/settings/address'),
+				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/address'),
 				data: {
 					documentserver: euroofficeUrl,
 					documentserverInternal: euroofficeInternalUrl,
@@ -200,13 +200,13 @@ import { defineAsyncComponent } from 'vue'
 
 						$('.section-eurooffice-common, .section-eurooffice-templates, .section-eurooffice-watermark').toggleClass('eurooffice-hide', (response.documentserver == null && !demo) || !!response.error.length)
 
-						const versionMessage = response.version ? (' (' + t(OCA.Onlyoffice.AppName, 'version') + ' ' + response.version + ')') : ''
+						const versionMessage = response.version ? (' (' + t(OCA.Eurooffice.AppName, 'version') + ' ' + response.version + ')') : ''
 
 						if (response.error) {
-							OCP.Toast.error(t(OCA.Onlyoffice.AppName, 'Error when trying to connect') + ' (' + response.error + ')' + versionMessage)
+							OCP.Toast.error(t(OCA.Eurooffice.AppName, 'Error when trying to connect') + ' (' + response.error + ')' + versionMessage)
 						} else {
 							if (response.secret !== null) {
-								OCP.Toast.success(t(OCA.Onlyoffice.AppName, 'Server settings have been successfully updated') + versionMessage)
+								OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Server settings have been successfully updated') + versionMessage)
 							} else {
 								spawnDialog(defineAsyncComponent(() => import('./views/EmptyJwtInfoDialog.vue')))
 							}
@@ -254,7 +254,7 @@ import { defineAsyncComponent } from 'vue'
 
 			$.ajax({
 				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/settings/common'),
+				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/common'),
 				data: {
 					defFormats,
 					editFormats,
@@ -279,7 +279,7 @@ import { defineAsyncComponent } from 'vue'
 				success: function onSuccess(response) {
 					$('.section-eurooffice').removeClass('icon-loading')
 					if (response) {
-						OCP.Toast.success(t(OCA.Onlyoffice.AppName, 'Common settings have been successfully updated'))
+						OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Common settings have been successfully updated'))
 					}
 				},
 			})
@@ -320,7 +320,7 @@ import { defineAsyncComponent } from 'vue'
 
 			$.ajax({
 				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/settings/security'),
+				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/security'),
 				data: {
 					watermarks: watermarkSettings,
 					plugins,
@@ -330,7 +330,7 @@ import { defineAsyncComponent } from 'vue'
 				success: function onSuccess(response) {
 					$('.section-eurooffice').removeClass('icon-loading')
 					if (response) {
-						OCP.Toast.success(t(OCA.Onlyoffice.AppName, 'Security settings have been successfully updated'))
+						OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Security settings have been successfully updated'))
 					}
 				},
 			})
@@ -353,8 +353,8 @@ import { defineAsyncComponent } from 'vue'
 
 		$('#euroofficeClearVersionHistory').click(function() {
 			OC.dialogs.confirm(
-				t(OCA.Onlyoffice.AppName, 'Are you sure you want to clear metadata?'),
-				t(OCA.Onlyoffice.AppName, 'Confirm metadata removal'),
+				t(OCA.Eurooffice.AppName, 'Are you sure you want to clear metadata?'),
+				t(OCA.Eurooffice.AppName, 'Confirm metadata removal'),
 				(clicked) => {
 					if (!clicked) {
 						return
@@ -364,11 +364,11 @@ import { defineAsyncComponent } from 'vue'
 
 					$.ajax({
 						method: 'DELETE',
-						url: OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/ajax/settings/history'),
+						url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/history'),
 						success: function onSuccess(response) {
 							$('.section-eurooffice').removeClass('icon-loading')
 							if (response) {
-								OCP.Toast.success(t(OCA.Onlyoffice.AppName, 'All history successfully deleted'))
+								OCP.Toast.success(t(OCA.Eurooffice.AppName, 'All history successfully deleted'))
 							}
 						},
 					})
@@ -383,12 +383,12 @@ import { defineAsyncComponent } from 'vue'
 			data.append('file', file)
 
 			$('.section-eurooffice').addClass('icon-loading')
-			OCA.Onlyoffice.AddTemplate(file, (template, error) => {
+			OCA.Eurooffice.AddTemplate(file, (template, error) => {
 
 				$('.section-eurooffice').removeClass('icon-loading')
 				const message = error
-					? t(OCA.Onlyoffice.AppName, 'Error') + ': ' + error
-					: t(OCA.Onlyoffice.AppName, 'Template successfully added')
+					? t(OCA.Eurooffice.AppName, 'Error') + ': ' + error
+					: t(OCA.Eurooffice.AppName, 'Template successfully added')
 
 				if (error) {
 					OCP.Toast.error(message)
@@ -396,7 +396,7 @@ import { defineAsyncComponent } from 'vue'
 				}
 
 				if (template) {
-					OCA.Onlyoffice.AttachItemTemplate(template)
+					OCA.Eurooffice.AttachItemTemplate(template)
 				}
 				OCP.Toast.success(message)
 			})
@@ -407,12 +407,12 @@ import { defineAsyncComponent } from 'vue'
 			const templateId = $(item).attr('data-id')
 
 			$('.section-eurooffice').addClass('icon-loading')
-			OCA.Onlyoffice.DeleteTemplate(templateId, (response) => {
+			OCA.Eurooffice.DeleteTemplate(templateId, (response) => {
 				$('.section-eurooffice').removeClass('icon-loading')
 
 				const message = response.error
-					? t(OCA.Onlyoffice.AppName, 'Error') + ': ' + response.error
-					: t(OCA.Onlyoffice.AppName, 'Template successfully deleted')
+					? t(OCA.Eurooffice.AppName, 'Error') + ': ' + response.error
+					: t(OCA.Eurooffice.AppName, 'Template successfully deleted')
 				if (response.error) {
 					OCP.Toast.error(message)
 					return
@@ -427,7 +427,7 @@ import { defineAsyncComponent } from 'vue'
 			const item = $(event.target).parents('.eurooffice-template-item')
 			const templateId = $(item).attr('data-id')
 
-			const url = OC.generateUrl('/apps/' + OCA.Onlyoffice.AppName + '/{fileId}?template={template}',
+			const url = OC.generateUrl('/apps/' + OCA.Eurooffice.AppName + '/{fileId}?template={template}',
 				{
 					fileId: templateId,
 					template: 'true',
@@ -440,7 +440,7 @@ import { defineAsyncComponent } from 'vue'
 			const item = $(event.target).parents('.eurooffice-template-item')
 			const templateId = $(item).attr('data-id')
 
-			const downloadLink = OC.generateUrl('apps/' + OCA.Onlyoffice.AppName + '/downloadas?fileId={fileId}&template={template}', {
+			const downloadLink = OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/downloadas?fileId={fileId}&template={template}', {
 				fileId: templateId,
 				template: 'true',
 			})

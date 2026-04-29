@@ -33,11 +33,11 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
  */
 (function($, OC) {
 
-	OCA.Onlyoffice = Object.assign({
+	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
-	}, OCA.Onlyoffice)
+	}, OCA.Eurooffice)
 
-	OCA.Onlyoffice.Permissions = {
+	OCA.Eurooffice.Permissions = {
 		None: 0,
 		Review: 1,
 		Comment: 2,
@@ -49,7 +49,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 
 	const advancedTab = new OCA.Files.Sidebar.Tab({
 		id: 'euroofficeSharingTabView',
-		name: t(OCA.Onlyoffice.AppName, 'Advanced'),
+		name: t(OCA.Eurooffice.AppName, 'Advanced'),
 		iconSvg: AppDarkSvg,
 
 		mount(el, fileInfo, context) {
@@ -72,8 +72,8 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			let canDisplay = false
 
 			if (!fileInfo.isDirectory()) {
-				const ext = OCA.Onlyoffice.getFileExtension(fileInfo.name)
-				const format = OCA.Onlyoffice.setting.formats[ext]
+				const ext = OCA.Eurooffice.getFileExtension(fileInfo.name)
+				const format = OCA.Eurooffice.setting.formats[ext]
 				if (format && (format.review
 					|| format.comment
 					|| format.fillForms
@@ -109,7 +109,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 		const getTemplate = function(callback) {
 			if ($el.find('.eurooffice-share-container').length === 0) {
 				$('<ul>', { class: 'eurooffice-share-container' }).appendTo($el)
-				$('<div>').html(t(OCA.Onlyoffice.AppName, 'Provide advanced document permissions using Euro-Office')).prependTo($el)
+				$('<div>').html(t(OCA.Eurooffice.AppName, 'Provide advanced document permissions using Euro-Office')).prependTo($el)
 			}
 
 			if (templateItem) {
@@ -117,7 +117,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 				return
 			}
 
-			$.get(OC.filePath(OCA.Onlyoffice.AppName, 'templates', 'share.html'),
+			$.get(OC.filePath(OCA.Eurooffice.AppName, 'templates', 'share.html'),
 				function(tmpl) {
 					templateItem = $(tmpl)
 
@@ -138,15 +138,15 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 					if (extra.type === OC.Share.SHARE_TYPE_GROUP
 						|| extra.type === OC.Share.SHARE_TYPE_ROOM) {
 						avatarSrc = '/index.php/avatar/guest/' + extra.shareWith + '/32?v=0'
-						label = extra.shareWith + ' (' + t(OCA.Onlyoffice.AppName, 'group') + ')'
+						label = extra.shareWith + ' (' + t(OCA.Eurooffice.AppName, 'group') + ')'
 					}
 
 					if (extra.type === OC.Share.SHARE_TYPE_ROOM) {
-						label = extra.shareWith + ' (' + t(OCA.Onlyoffice.AppName, 'conversation') + ')'
+						label = extra.shareWith + ' (' + t(OCA.Eurooffice.AppName, 'conversation') + ')'
 					}
 
 					if (extra.type === OC.Share.SHARE_TYPE_LINK) {
-						label = t(OCA.Onlyoffice.AppName, 'Share link')
+						label = t(OCA.Eurooffice.AppName, 'Share link')
 
 						const avatarWrapper = itemNode.find('.avatardiv')
 						avatarWrapper.addClass('eurooffice-share-link-avatar')
@@ -172,26 +172,26 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			const fileId = fileInfo.id
 			const extra = collection.find(item => item.share_id === shareId)
 
-			let permissions = OCA.Onlyoffice.Permissions.None
-			if (permissionValues[OCA.Onlyoffice.Permissions.Review]) {
-				permissions |= OCA.Onlyoffice.Permissions.Review
+			let permissions = OCA.Eurooffice.Permissions.None
+			if (permissionValues[OCA.Eurooffice.Permissions.Review]) {
+				permissions |= OCA.Eurooffice.Permissions.Review
 			}
-			if (permissionValues[OCA.Onlyoffice.Permissions.Comment]
-				&& (permissions & OCA.Onlyoffice.Permissions.Review) !== OCA.Onlyoffice.Permissions.Review
-				&& (permissions & OCA.Onlyoffice.Permissions.ModifyFilter) !== OCA.Onlyoffice.Permissions.ModifyFilter) {
-				permissions |= OCA.Onlyoffice.Permissions.Comment
+			if (permissionValues[OCA.Eurooffice.Permissions.Comment]
+				&& (permissions & OCA.Eurooffice.Permissions.Review) !== OCA.Eurooffice.Permissions.Review
+				&& (permissions & OCA.Eurooffice.Permissions.ModifyFilter) !== OCA.Eurooffice.Permissions.ModifyFilter) {
+				permissions |= OCA.Eurooffice.Permissions.Comment
 			}
-			if (permissionValues[OCA.Onlyoffice.Permissions.FillForms]
-				&& (permissions & OCA.Onlyoffice.Permissions.Review) !== OCA.Onlyoffice.Permissions.Review) {
-				permissions |= OCA.Onlyoffice.Permissions.FillForms
+			if (permissionValues[OCA.Eurooffice.Permissions.FillForms]
+				&& (permissions & OCA.Eurooffice.Permissions.Review) !== OCA.Eurooffice.Permissions.Review) {
+				permissions |= OCA.Eurooffice.Permissions.FillForms
 			}
-			if (permissionValues[OCA.Onlyoffice.Permissions.ModifyFilter]
-				&& (permissions & OCA.Onlyoffice.Permissions.Comment) !== OCA.Onlyoffice.Permissions.Comment) {
-				permissions |= OCA.Onlyoffice.Permissions.ModifyFilter
+			if (permissionValues[OCA.Eurooffice.Permissions.ModifyFilter]
+				&& (permissions & OCA.Eurooffice.Permissions.Comment) !== OCA.Eurooffice.Permissions.Comment) {
+				permissions |= OCA.Eurooffice.Permissions.ModifyFilter
 			}
 
 			permissionsMenu.block(true)
-			OCA.Onlyoffice.SetShares(extra.id, shareId, fileId, permissions, (extra) => {
+			OCA.Eurooffice.SetShares(extra.id, shareId, fileId, permissions, (extra) => {
 				collection.forEach(item => {
 					if (item.share_id === extra.share_id) {
 						item.id = extra.id
@@ -272,40 +272,40 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			const attributes = []
 
 			if (format.review
-				&& (OCA.Onlyoffice.Permissions.Review & extra.available) === OCA.Onlyoffice.Permissions.Review) {
-				const review = (OCA.Onlyoffice.Permissions.Review & extra.permissions) === OCA.Onlyoffice.Permissions.Review
+				&& (OCA.Eurooffice.Permissions.Review & extra.available) === OCA.Eurooffice.Permissions.Review) {
+				const review = (OCA.Eurooffice.Permissions.Review & extra.permissions) === OCA.Eurooffice.Permissions.Review
 				attributes.push({
 					checked: review,
-					extra: OCA.Onlyoffice.Permissions.Review,
-					label: t(OCA.Onlyoffice.AppName, 'Review only'),
+					extra: OCA.Eurooffice.Permissions.Review,
+					label: t(OCA.Eurooffice.AppName, 'Review only'),
 				})
 			}
 			if (format.comment
-				&& (OCA.Onlyoffice.Permissions.Comment & extra.available) === OCA.Onlyoffice.Permissions.Comment) {
-				const comment = (OCA.Onlyoffice.Permissions.Comment & extra.permissions) === OCA.Onlyoffice.Permissions.Comment
+				&& (OCA.Eurooffice.Permissions.Comment & extra.available) === OCA.Eurooffice.Permissions.Comment) {
+				const comment = (OCA.Eurooffice.Permissions.Comment & extra.permissions) === OCA.Eurooffice.Permissions.Comment
 				attributes.push({
 					checked: comment,
-					extra: OCA.Onlyoffice.Permissions.Comment,
-					label: t(OCA.Onlyoffice.AppName, 'Comment only'),
+					extra: OCA.Eurooffice.Permissions.Comment,
+					label: t(OCA.Eurooffice.AppName, 'Comment only'),
 				})
 			}
 			if (format.fillForms
-				&& (OCA.Onlyoffice.Permissions.FillForms & extra.available) === OCA.Onlyoffice.Permissions.FillForms) {
-				const fillForms = (OCA.Onlyoffice.Permissions.FillForms & extra.permissions) === OCA.Onlyoffice.Permissions.FillForms
+				&& (OCA.Eurooffice.Permissions.FillForms & extra.available) === OCA.Eurooffice.Permissions.FillForms) {
+				const fillForms = (OCA.Eurooffice.Permissions.FillForms & extra.permissions) === OCA.Eurooffice.Permissions.FillForms
 				attributes.push({
 					checked: fillForms,
-					extra: OCA.Onlyoffice.Permissions.FillForms,
-					label: t(OCA.Onlyoffice.AppName, 'Form filling'),
+					extra: OCA.Eurooffice.Permissions.FillForms,
+					label: t(OCA.Eurooffice.AppName, 'Form filling'),
 				})
 			}
 
 			if (format.modifyFilter
-				&& (OCA.Onlyoffice.Permissions.ModifyFilter & extra.available) === OCA.Onlyoffice.Permissions.ModifyFilter) {
-				const modifyFilter = (OCA.Onlyoffice.Permissions.ModifyFilter & extra.permissions) === OCA.Onlyoffice.Permissions.ModifyFilter
+				&& (OCA.Eurooffice.Permissions.ModifyFilter & extra.available) === OCA.Eurooffice.Permissions.ModifyFilter) {
+				const modifyFilter = (OCA.Eurooffice.Permissions.ModifyFilter & extra.permissions) === OCA.Eurooffice.Permissions.ModifyFilter
 				attributes.push({
 					checked: modifyFilter,
-					extra: OCA.Onlyoffice.Permissions.ModifyFilter,
-					label: t(OCA.Onlyoffice.AppName, 'Global filter'),
+					extra: OCA.Eurooffice.Permissions.ModifyFilter,
+					label: t(OCA.Eurooffice.AppName, 'Global filter'),
 				})
 			}
 
@@ -434,10 +434,10 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 
 				fileInfo = _fileInfo
 
-				const ext = OCA.Onlyoffice.getFileExtension(fileInfo.name)
-				format = OCA.Onlyoffice.setting.formats[ext]
+				const ext = OCA.Eurooffice.getFileExtension(fileInfo.name)
+				format = OCA.Eurooffice.setting.formats[ext]
 
-				OCA.Onlyoffice.GetShares(fileInfo.id, (shares) => {
+				OCA.Eurooffice.GetShares(fileInfo.id, (shares) => {
 					collection = shares
 
 					render()
@@ -454,16 +454,16 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 		}
 	}
 
-	OCA.Onlyoffice.GetShares = function(fileId, callback) {
+	OCA.Eurooffice.GetShares = function(fileId, callback) {
 		$.ajax({
-			url: OC.linkToOCS('apps/' + OCA.Onlyoffice.AppName + '/api/v1/shares', 2) + fileId + '?format=json',
+			url: OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1/shares', 2) + fileId + '?format=json',
 			success: function onSuccess(response) {
 				callback(response.ocs.data)
 			},
 		})
 	}
 
-	OCA.Onlyoffice.SetShares = function(id, shareId, fileId, permissions, callback) {
+	OCA.Eurooffice.SetShares = function(id, shareId, fileId, permissions, callback) {
 		const data = {
 			extraId: id,
 			shareId,
@@ -473,7 +473,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 
 		$.ajax({
 			method: 'PUT',
-			url: OC.linkToOCS('apps/' + OCA.Onlyoffice.AppName + '/api/v1', 2) + 'shares?format=json',
+			url: OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1', 2) + 'shares?format=json',
 			data,
 			success: function onSuccess(response) {
 				callback(response.ocs.data)

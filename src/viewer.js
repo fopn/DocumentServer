@@ -27,20 +27,20 @@
  * @param {object} OCA Nextcloud OCA object
  */
 (function(OCA) {
-	if (OCA.Onlyoffice) {
+	if (OCA.Eurooffice) {
 		return
 	}
 
-	OCA.Onlyoffice = {
+	OCA.Eurooffice = {
 		AppName: 'eurooffice',
 		frameSelector: null,
 		setting: {},
 	}
 
-	OCA.Onlyoffice.setting = OCP.InitialState.loadState(OCA.Onlyoffice.AppName, 'settings')
+	OCA.Eurooffice.setting = OCP.InitialState.loadState(OCA.Eurooffice.AppName, 'settings')
 
-	const OnlyofficeViewerVue = {
-		name: 'OnlyofficeViewerVue',
+	const EuroofficeViewerVue = {
+		name: 'EuroofficeViewerVue',
 		render(createElement) {
 			const self = this
 
@@ -69,7 +69,7 @@
 		},
 		data() {
 			return {
-				url: OC.generateUrl('/apps/' + OCA.Onlyoffice.AppName + '/{fileId}?filePath={filePath}',
+				url: OC.generateUrl('/apps/' + OCA.Eurooffice.AppName + '/{fileId}?filePath={filePath}',
 					{
 						fileId: this.fileid,
 						filePath: this.filename,
@@ -79,19 +79,19 @@
 	}
 
 	if (OCA.Viewer) {
-		OCA.Onlyoffice.frameSelector = '#euroofficeViewerFrame'
+		OCA.Eurooffice.frameSelector = '#euroofficeViewerFrame'
 
-		const mimes = $.map(OCA.Onlyoffice.setting.formats, function(format) {
+		const mimes = $.map(OCA.Eurooffice.setting.formats, function(format) {
 			if (format.def) {
 				return format.mime
 			}
 		})
 		mimes.flat()
 		OCA.Viewer.registerHandler({
-			id: OCA.Onlyoffice.AppName,
+			id: OCA.Eurooffice.AppName,
 			group: null,
 			mimes,
-			component: OnlyofficeViewerVue,
+			component: EuroofficeViewerVue,
 		})
 	}
 
