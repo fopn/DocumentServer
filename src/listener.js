@@ -21,23 +21,31 @@
  *
  */
 
-/* global _, $ */
+/* global _ */
 
 /**
  * @param {object} OCA Nextcloud OCA object
  */
 (function(OCA) {
 
+	const getFavIconHref = () => {
+		const link = document.querySelector('link[rel="icon"]')
+		return link ? link.getAttribute('href') : null
+	}
+
 	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
 		frameSelector: null,
 		titleBase: window.document.title,
-		favIconBase: $('link[rel="icon"]').attr('href'),
+		favIconBase: getFavIconHref(),
 	}, OCA.Eurooffice)
 
 	OCA.Eurooffice.onRequestClose = function() {
 
-		$(OCA.Eurooffice.frameSelector).remove()
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame) {
+			frame.remove()
+		}
 
 		if (OCA.Viewer && OCA.Viewer.close) {
 			OCA.Viewer.close()
@@ -53,7 +61,10 @@
 		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Save as'),
 			function(fileDir) {
 				saveData.dir = fileDir
-				$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSaveAs(saveData)
+				const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+				if (frame && frame.contentWindow) {
+					frame.contentWindow.OCA.Eurooffice.editorSaveAs(saveData)
+				}
 			},
 			false,
 			'httpd/unix-directory',
@@ -63,19 +74,25 @@
 	}
 
 	OCA.Eurooffice.onRequestInsertImage = function(imageMimes) {
-		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Insert image'),
-			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorInsertImage,
-			false,
-			imageMimes,
-			true)
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame && frame.contentWindow) {
+			OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Insert image'),
+				frame.contentWindow.OCA.Eurooffice.editorInsertImage,
+				false,
+				imageMimes,
+				true)
+		}
 	}
 
 	OCA.Eurooffice.onRequestMailMergeRecipients = function(recipientMimes) {
-		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select recipients'),
-			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSetRecipient,
-			false,
-			recipientMimes,
-			true)
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame && frame.contentWindow) {
+			OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select recipients'),
+				frame.contentWindow.OCA.Eurooffice.editorSetRecipient,
+				false,
+				recipientMimes,
+				true)
+		}
 	}
 
 	OCA.Eurooffice.onRequestSelectDocument = function(revisedMimes, documentSelectionType) {
@@ -93,19 +110,25 @@
 		default:
 			title = t(OCA.Eurooffice.AppName, 'Select file')
 		}
-		OC.dialogs.filepicker(title,
-			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorSetRequested.bind({ documentSelectionType }),
-			false,
-			revisedMimes,
-			true)
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame && frame.contentWindow) {
+			OC.dialogs.filepicker(title,
+				frame.contentWindow.OCA.Eurooffice.editorSetRequested.bind({ documentSelectionType }),
+				false,
+				revisedMimes,
+				true)
+		}
 	}
 
 	OCA.Eurooffice.onRequestReferenceSource = function(referenceSourceMimes) {
-		OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select data source'),
-			$(OCA.Eurooffice.frameSelector)[0].contentWindow.OCA.Eurooffice.editorReferenceSource,
-			false,
-			referenceSourceMimes,
-			true)
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame && frame.contentWindow) {
+			OC.dialogs.filepicker(t(OCA.Eurooffice.AppName, 'Select data source'),
+				frame.contentWindow.OCA.Eurooffice.editorReferenceSource,
+				false,
+				referenceSourceMimes,
+				true)
+		}
 	}
 
 	OCA.Eurooffice.onDocumentReady = function() {
@@ -113,7 +136,10 @@
 	}
 
 	OCA.Eurooffice.changeFavicon = function(favicon) {
-		$('link[rel="icon"]').attr('href', favicon)
+		const link = document.querySelector('link[rel="icon"]')
+		if (link) {
+			link.setAttribute('href', favicon)
+		}
 	}
 
 	OCA.Eurooffice.setViewport = function() {
@@ -132,8 +158,9 @@
 	}
 
 	window.addEventListener('message', function(event) {
-		if (!$(OCA.Eurooffice.frameSelector).length
-			|| $(OCA.Eurooffice.frameSelector)[0].contentWindow !== event.source
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (!frame
+			|| frame.contentWindow !== event.source
 			|| !event.data.method) {
 			return
 		}
@@ -179,7 +206,8 @@
 	}, false)
 
 	window.addEventListener('popstate', function(event) {
-		if ($(OCA.Eurooffice.frameSelector).length) {
+		const frame = document.querySelector(OCA.Eurooffice.frameSelector)
+		if (frame) {
 			OCA.Eurooffice.onRequestClose()
 		}
 	})

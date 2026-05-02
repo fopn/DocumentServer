@@ -21,13 +21,14 @@
  *
  */
 
-/* global _, DocsAPI, jQuery, moment, oc_defaults */
+/* global _, DocsAPI, moment, oc_defaults */
+
+import axios from '@nextcloud/axios'
 
 /**
- * @param {object} $ JQueryStatic object
  * @param {object} OCA Nextcloud OCA object
  */
-(function($, OCA) {
+(function(OCA) {
 
 	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
@@ -40,14 +41,19 @@
 
 	OCA.Eurooffice.InitEditor = function() {
 
-		OCA.Eurooffice.fileId = $('#iframeEditor').data('id')
-		OCA.Eurooffice.shareToken = $('#iframeEditor').data('sharetoken')
-		OCA.Eurooffice.directToken = $('#iframeEditor').data('directtoken')
-		OCA.Eurooffice.template = $('#iframeEditor').data('template')
-		OCA.Eurooffice.inframe = !!$('#iframeEditor').data('inframe')
-		OCA.Eurooffice.inviewer = !!$('#iframeEditor').data('inviewer')
-		OCA.Eurooffice.filePath = $('#iframeEditor').data('path')
-		OCA.Eurooffice.anchor = $('#iframeEditor').attr('data-anchor')
+		const iframeEditor = document.getElementById('iframeEditor')
+		if (!iframeEditor) {
+			return
+		}
+
+		OCA.Eurooffice.fileId = iframeEditor.dataset.id
+		OCA.Eurooffice.shareToken = iframeEditor.dataset.sharetoken
+		OCA.Eurooffice.directToken = iframeEditor.dataset.directtoken
+		OCA.Eurooffice.template = iframeEditor.dataset.template
+		OCA.Eurooffice.inframe = !!iframeEditor.dataset.inframe
+		OCA.Eurooffice.inviewer = !!iframeEditor.dataset.inviewer
+		OCA.Eurooffice.filePath = iframeEditor.dataset.path
+		OCA.Eurooffice.anchor = iframeEditor.getAttribute('data-anchor')
 		OCA.Eurooffice.currentWindow = window
 		OCA.Eurooffice.currentUser = OC.getCurrentUser()
 
@@ -63,9 +69,9 @@
 
 		const configUrl = OCA.Eurooffice.getConfigUrl()
 
-		$.ajax({
-			url: configUrl,
-			success: function onSuccess(config) {
+		axios.get(configUrl)
+			.then((response) => {
+				const config = response.data
 				if (config) {
 					OCA.Eurooffice.device = config.type
 					if (OCA.Eurooffice.device === 'mobile') {
@@ -188,8 +194,11 @@
 						}
 
 						if (!OCA.Eurooffice.directEditor
-							&& config.type === 'mobile' && $('#app > iframe').css('position') === 'fixed') {
-							$('#app > iframe').css('height', 'calc(100% - 50px)')
+							&& config.type === 'mobile') {
+							const appIframe = document.querySelector('#app > iframe')
+							if (appIframe && window.getComputedStyle(appIframe).position === 'fixed') {
+								appIframe.style.height = 'calc(100% - 50px)'
+							}
 						}
 
 						const favicon = OC.filePath(OCA.Eurooffice.AppName, 'img', OCA.Eurooffice.documentType + '.ico')
@@ -200,56 +209,60 @@
 							},
 							'*')
 						} else {
-							$('link[rel="icon"]').attr('href', favicon)
+							const faviconLink = document.querySelector('link[rel="icon"]')
+							if (faviconLink) {
+								faviconLink.setAttribute('href', favicon)
+							}
 						}
 					}
 					document.head.appendChild(script)
 				}
-			},
-		})
+			})
+			.catch((error) => {
+				OCA.Eurooffice.showMessage(error.message || t(OCA.Eurooffice.AppName, 'Failed to load configuration'), 'error', { timeout: -1 })
+			})
 	}
 
 	OCA.Eurooffice.onRequestHistory = function(version) {
-		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/history?fileId={fileId}',
+		axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/history?fileId={fileId}',
 			{
 				fileId: OCA.Eurooffice.fileId || 0,
-			}),
-		function onSuccess(response) {
-			OCA.Eurooffice.refreshHistory(response, version)
-		})
+			}))
+			.then((response) => {
+				OCA.Eurooffice.refreshHistory(response.data, version)
+			})
 	}
 
 	OCA.Eurooffice.onRequestHistoryData = function(event) {
 		const version = event.data
 
-		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/version?fileId={fileId}&version={version}',
+		axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/version?fileId={fileId}&version={version}',
 			{
 				fileId: OCA.Eurooffice.fileId || 0,
 				version,
-			}),
-		function onSuccess(response) {
-			if (response.error) {
-				response = {
-					error: response.error,
-					version,
+			}))
+			.then((response) => {
+				let data = response.data
+				if (data.error) {
+					data = {
+						error: data.error,
+						version,
+					}
 				}
-			}
-			OCA.Eurooffice.docEditor.setHistoryData(response)
-		})
+				OCA.Eurooffice.docEditor.setHistoryData(data)
+			})
 	}
 
 	OCA.Eurooffice.onRequestRestore = function(event) {
 		const version = event.data.version
 
-		$.ajax({
-			method: 'PUT',
-			url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/restore'),
-			data: {
-				fileId: OCA.Eurooffice.fileId || 0,
-				version,
-			},
-			success: function onSuccess(response) {
-				OCA.Eurooffice.refreshHistory(response, response.at(-1).version)
+		axios.put(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/restore'), {
+			fileId: OCA.Eurooffice.fileId || 0,
+			version,
+		})
+			.then((response) => {
+				const data = response.data
+				OCA.Eurooffice.refreshHistory(data, data.at(-1).version)
 
 				if (OCA.Eurooffice.inframe) {
 					window.parent.postMessage({
@@ -257,8 +270,7 @@
 					},
 					'*')
 				}
-			},
-		})
+			})
 	}
 
 	OCA.Eurooffice.onRequestHistoryClose = function() {
@@ -312,15 +324,15 @@
 	}
 
 	OCA.Eurooffice.editorSaveAs = function(saveData) {
-		$.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/save'),
-			saveData,
-			function onSuccess(response) {
-				if (response.error) {
-					OCA.Eurooffice.showMessage(response.error, 'error')
+		axios.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/save'), saveData)
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
 					return
 				}
 
-				OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'File saved') + ' (' + response.name + ')')
+				OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'File saved') + ' (' + data.name + ')')
 			})
 	}
 
@@ -353,22 +365,23 @@
 	}
 
 	OCA.Eurooffice.editorInsertImage = function(filePath) {
-		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
+		axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
 			{
 				filePath,
-			}),
-		function onSuccess(response) {
-			if (response.error) {
-				OCA.Eurooffice.showMessage(response.error, 'error')
-				return
-			}
+			}))
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
+					return
+				}
 
-			if (OCA.Eurooffice.insertImageType) {
-				response.c = OCA.Eurooffice.insertImageType
-			}
+				if (OCA.Eurooffice.insertImageType) {
+					data.c = OCA.Eurooffice.insertImageType
+				}
 
-			OCA.Eurooffice.docEditor.insertImage(response)
-		})
+				OCA.Eurooffice.docEditor.insertImage(data)
+			})
 	}
 
 	OCA.Eurooffice.onRequestMailMergeRecipients = function() {
@@ -392,18 +405,19 @@
 	}
 
 	OCA.Eurooffice.editorSetRecipient = function(filePath) {
-		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
+		axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
 			{
 				filePath,
-			}),
-		function onSuccess(response) {
-			if (response.error) {
-				OCA.Eurooffice.showMessage(response.error, 'error')
-				return
-			}
+			}))
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
+					return
+				}
 
-			OCA.Eurooffice.docEditor.setMailMergeRecipients(response)
-		})
+				OCA.Eurooffice.docEditor.setMailMergeRecipients(data)
+			})
 	}
 
 	OCA.Eurooffice.editorReferenceSource = function(filePath) {
@@ -412,16 +426,16 @@
 			return
 		}
 
-		$.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/reference'),
-			{
-				path: filePath,
-			},
-			function onSuccess(response) {
-				if (response.error) {
-					OCA.Eurooffice.showMessage(response.error, 'error')
+		axios.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/reference'), {
+			path: filePath,
+		})
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
 					return
 				}
-				OCA.Eurooffice.docEditor.setReferenceSource(response)
+				OCA.Eurooffice.docEditor.setReferenceSource(data)
 			})
 	}
 
@@ -483,19 +497,20 @@
 
 	OCA.Eurooffice.editorSetRequested = function(filePath) {
 		const documentSelectionType = this.documentSelectionType
-		$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
+		axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/url?filePath={filePath}',
 			{
 				filePath,
-			}),
-		function onSuccess(response) {
-			if (response.error) {
-				OCP.Toast.error(response.error)
-				return
-			}
-			response.c = documentSelectionType
+			}))
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCP.Toast.error(data.error)
+					return
+				}
+				data.c = documentSelectionType
 
-			OCA.Eurooffice.docEditor.setRequestedDocument(response)
-		})
+				OCA.Eurooffice.docEditor.setRequestedDocument(data)
+			})
 	}
 
 	OCA.Eurooffice.onMakeActionLink = function(event) {
@@ -530,16 +545,16 @@
 		const operationType = typeof (event.data.c) !== 'undefined' ? event.data.c : null
 		switch (operationType) {
 		case 'info': {
-			$.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/userInfo?userIds={userIds}',
+			axios.get(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/userInfo?userIds={userIds}',
 				{
 					userIds: JSON.stringify(event.data.id),
-				}),
-			function onSuccess(response) {
-				OCA.Eurooffice.docEditor.setUsers({
-					c: operationType,
-					users: response,
+				}))
+				.then((response) => {
+					OCA.Eurooffice.docEditor.setUsers({
+						c: operationType,
+						users: response.data,
+					})
 				})
-			})
 			break
 		}
 		default: {
@@ -547,20 +562,20 @@
 			if (typeof (event.data.search) !== 'undefined') {
 				requestString += '&from=' + event.data.from + '&count=' + event.data.count + '&search=' + encodeURIComponent(event.data.search)
 			}
-			$.get(OC.generateUrl(requestString,
+			axios.get(OC.generateUrl(requestString,
 				{
 					fileId: OCA.Eurooffice.fileId || 0,
-				}),
-			function onSuccess(response) {
-				OCA.Eurooffice.docEditor.setUsers({
-					c: operationType,
-					users: response,
-					// support v9.0
-					total: 1 + (!event.data.count || response.length < event.data.count ? 0 : (event.data.from + event.data.count)),
-					// since v9.0.1
-					isPaginated: true,
+				}))
+				.then((response) => {
+					OCA.Eurooffice.docEditor.setUsers({
+						c: operationType,
+						users: response.data,
+						// support v9.0
+						total: 1 + (!event.data.count || response.data.length < event.data.count ? 0 : (event.data.from + event.data.count)),
+						// since v9.0.1
+						isPaginated: true,
+					})
 				})
-			})
 		}
 		}
 	}
@@ -572,20 +587,20 @@
 
 		const fileId = OCA.Eurooffice.fileId
 
-		$.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/mention'),
-			{
-				fileId,
-				anchor: JSON.stringify(actionLink),
-				comment,
-				emails,
-			},
-			function onSuccess(response) {
-				if (response.error) {
-					OCA.Eurooffice.showMessage(response.error, 'error')
+		axios.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/mention'), {
+			fileId,
+			anchor: JSON.stringify(actionLink),
+			comment,
+			emails,
+		})
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
 					return
 				}
 
-				OCA.Eurooffice.showMessage(response.message)
+				OCA.Eurooffice.showMessage(data.message)
 			})
 	}
 
@@ -594,19 +609,19 @@
 		const referenceData = event.data.referenceData
 		const path = event.data.path
 
-		$.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/reference'),
-			{
-				referenceData,
-				path,
-				link,
-			},
-			function onSuccess(response) {
-				if (response.error) {
-					OCA.Eurooffice.showMessage(response.error, 'error')
+		axios.post(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/reference'), {
+			referenceData,
+			path,
+			link,
+		})
+			.then((response) => {
+				const data = response.data
+				if (data.error) {
+					OCA.Eurooffice.showMessage(data.error, 'error')
 					return
 				}
 
-				OCA.Eurooffice.docEditor.setReferenceData(response)
+				OCA.Eurooffice.docEditor.setReferenceData(data)
 			})
 	}
 
@@ -639,29 +654,21 @@
 
 	OCA.Eurooffice.onMetaChange = function(event) {
 		if (event.data.favorite !== undefined) {
-			$.ajax({
-				url: OC.generateUrl('apps/files/api/v1/files' + OC.encodePath(OCA.Eurooffice.filePath)),
-				type: 'post',
-				data: JSON.stringify({
-					tags: event.data.favorite ? [OC.TAG_FAVORITE] : [],
-				}),
-				contentType: 'application/json',
-				dataType: 'json',
-				success() {
-					OCA.Eurooffice.docEditor.setFavorite(event.data.favorite)
-				},
+			axios.post(OC.generateUrl('apps/files/api/v1/files' + OC.encodePath(OCA.Eurooffice.filePath)), {
+				tags: event.data.favorite ? [OC.TAG_FAVORITE] : [],
 			})
+				.then(() => {
+					OCA.Eurooffice.docEditor.setFavorite(event.data.favorite)
+				})
 		}
 	}
 
 	OCA.Eurooffice.onRequestRefreshFile = function() {
 		const configUrl = OCA.Eurooffice.getConfigUrl()
-		$.ajax({
-			url: configUrl,
-			success: function onSuccess(config) {
-				OCA.Eurooffice.docEditor.refreshFile(config)
-			},
-		})
+		axios.get(configUrl)
+			.then((response) => {
+				OCA.Eurooffice.docEditor.refreshFile(response.data)
+			})
 	}
 
 	OCA.Eurooffice.showMessage = function(message, type = 'success', props = null) {
@@ -698,14 +705,14 @@
 			data = { error: response.error }
 		} else {
 			let currentVersion = 0
-			$.each(response, function(i, fileVersion) {
+			response.forEach((fileVersion, i) => {
 				if (fileVersion.version >= currentVersion) {
 					currentVersion = fileVersion.version
 				}
 
 				fileVersion.created = moment(fileVersion.created * 1000).format('L LTS')
 				if (fileVersion.changes) {
-					$.each(fileVersion.changes, function(j, change) {
+					fileVersion.changes.forEach((change, j) => {
 						change.created = moment(change.created + '+00:00').format('L LTS')
 					})
 				}
@@ -728,12 +735,13 @@
 			return
 		}
 
-		const headerHeight = $('#header').length > 0 ? $('#header').height() : 50
-		const wrapEl = $('#app>iframe')
-		if (wrapEl.length > 0) {
-			wrapEl[0].style.height = (screen.availHeight - headerHeight) + 'px'
+		const header = document.getElementById('header')
+		const headerHeight = header ? header.offsetHeight : 50
+		const wrapEl = document.querySelector('#app>iframe')
+		if (wrapEl) {
+			wrapEl.style.height = (screen.availHeight - headerHeight) + 'px'
 			window.scrollTo(0, -1)
-			wrapEl[0].style.height = (window.top.innerHeight - headerHeight) + 'px'
+			wrapEl.style.height = (window.top.innerHeight - headerHeight) + 'px'
 		}
 	}
 
@@ -764,7 +772,7 @@
 			params.push('shareToken=' + encodeURIComponent(OCA.Eurooffice.shareToken))
 		}
 		if (OCA.Eurooffice.directToken) {
-			$('html').addClass('eurooffice-full-page')
+			document.documentElement.classList.add('eurooffice-full-page')
 			params.push('directToken=' + encodeURIComponent(OCA.Eurooffice.directToken))
 		}
 		if (OCA.Eurooffice.template) {
@@ -797,4 +805,4 @@
 
 	OCA.Eurooffice.InitEditor()
 
-})(jQuery, OCA)
+})(OCA)

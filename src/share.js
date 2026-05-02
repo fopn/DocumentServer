@@ -23,15 +23,15 @@
 
 /* eslint-disable import/no-unresolved */
 
-/* global _, jQuery */
+/* global _ */
 
-import AppDarkSvg from '../img/app-dark.svg?raw';
+import AppDarkSvg from '../img/app-dark.svg?raw'
+import axios from '@nextcloud/axios'
 
 /**
- * @param {object} $ JQueryStatic object
  * @param {object} OC Nextcloud OCA object
  */
-(function($, OC) {
+(function(OC) {
 
 	OCA.Eurooffice = Object.assign({
 		AppName: 'eurooffice',
@@ -79,12 +79,6 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 					|| format.fillForms
 					|| format.modifyFilter)) {
 					canDisplay = true
-
-					if (($('#sharing').hasClass('active') || $('#tab-button-sharing').hasClass('active'))
-						&& tabcontext.fileInfo
-						&& tabcontext.fileInfo.id === fileInfo.id) {
-						this.update(fileInfo)
-					}
 				}
 			}
 
@@ -93,7 +87,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 	})
 
 	const advancedContext = function() {
-		let $el = null
+		let el = null
 
 		let format = null
 		let fileInfo = null
@@ -103,13 +97,18 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 		let templateItem = null
 
 		const getContainer = function() {
-			return $el.find('.eurooffice-share-container')
+			return el.querySelector('.eurooffice-share-container')
 		}
 
 		const getTemplate = function(callback) {
-			if ($el.find('.eurooffice-share-container').length === 0) {
-				$('<ul>', { class: 'eurooffice-share-container' }).appendTo($el)
-				$('<div>').html(t(OCA.Eurooffice.AppName, 'Provide advanced document permissions using Euro-Office')).prependTo($el)
+			if (!el.querySelector('.eurooffice-share-container')) {
+				const ul = document.createElement('ul')
+				ul.className = 'eurooffice-share-container'
+				el.appendChild(ul)
+
+				const div = document.createElement('div')
+				div.textContent = t(OCA.Eurooffice.AppName, 'Provide advanced document permissions using Euro-Office')
+				el.insertBefore(div, el.firstChild)
 			}
 
 			if (templateItem) {
@@ -117,9 +116,11 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 				return
 			}
 
-			$.get(OC.filePath(OCA.Eurooffice.AppName, 'templates', 'share.html'),
-				function(tmpl) {
-					templateItem = $(tmpl)
+			axios.get(OC.filePath(OCA.Eurooffice.AppName, 'templates', 'share.html'))
+				.then((response) => {
+					const tempDiv = document.createElement('div')
+					tempDiv.innerHTML = response.data
+					templateItem = tempDiv.firstElementChild
 
 					callback()
 				})
@@ -128,10 +129,10 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 		const render = function() {
 			getTemplate(() => {
 				collection.forEach(extra => {
-					const itemNode = templateItem.clone()
-					const descNode = itemNode.find('span')
-					const avatar = itemNode.find('img')
-					const actionButton = itemNode.find('#eurooffice-share-action')
+					const itemNode = templateItem.cloneNode(true)
+					const descNode = itemNode.querySelector('span')
+					const avatar = itemNode.querySelector('img')
+					const actionButton = itemNode.querySelector('#eurooffice-share-action')
 
 					let avatarSrc = '/index.php/avatar/' + extra.shareWith + '/32?v=0'
 					let label = extra.shareWithName
@@ -148,20 +149,24 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 					if (extra.type === OC.Share.SHARE_TYPE_LINK) {
 						label = t(OCA.Eurooffice.AppName, 'Share link')
 
-						const avatarWrapper = itemNode.find('.avatardiv')
-						avatarWrapper.addClass('eurooffice-share-link-avatar')
+						const avatarWrapper = itemNode.querySelector('.avatardiv')
+						if (avatarWrapper) {
+							avatarWrapper.classList.add('eurooffice-share-link-avatar')
+						}
 
 						avatarSrc = '/core/img/actions/public.svg'
 					}
 
-					actionButton.click(onClickPermissionMenu)
+					if (actionButton) {
+						actionButton.addEventListener('click', onClickPermissionMenu)
+					}
 
-					avatar[0].src = avatarSrc
-					descNode[0].innerText = label
+					if (avatar) avatar.src = avatarSrc
+					if (descNode) descNode.textContent = label
 
-					itemNode[0].id = extra.share_id
+					itemNode.id = extra.share_id
 
-					getContainer().append(itemNode)
+					getContainer().appendChild(itemNode)
 				})
 			})
 		}
@@ -226,7 +231,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			}
 			window.addEventListener('click', listenOuterClicks)
 
-			const shareNode = $(e.target).closest('.eurooffice-share-item')[0]
+			const shareNode = e.target.closest('.eurooffice-share-item')
 			const shareId = shareNode.id
 
 			if (permissionsMenu.isOpen()) {
@@ -240,7 +245,9 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 
 			const attributes = getPermissionAttributes(extra)
 
-			permissionsMenu.open(extra.share_id, attributes, $(e.target).position())
+			const targetElement = e.target
+			const rect = targetElement.getBoundingClientRect()
+			permissionsMenu.open(extra.share_id, attributes, { top: rect.top, left: rect.left })
 		}
 
 		const getCustomEvents = function() {
@@ -249,18 +256,21 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			return {
 				on() {
 					if (!init) {
-						$('#content').on('click', function(e) {
-							const target = $(e.target)[0]
-							if (!permissionsMenu
-								|| !permissionsMenu.isOpen()
-								|| target.id === 'eurooffice-share-action'
-								|| target.className === 'eurooffice-share-label'
-								|| target.closest('.eurooffice-share-action')) {
-								return
-							}
+						const content = document.getElementById('content')
+						if (content) {
+							content.addEventListener('click', function(e) {
+								const target = e.target
+								if (!permissionsMenu
+									|| !permissionsMenu.isOpen()
+									|| target.id === 'eurooffice-share-action'
+									|| target.className === 'eurooffice-share-label'
+									|| target.closest('.eurooffice-share-action')) {
+									return
+								}
 
-							permissionsMenu.close()
-						})
+								permissionsMenu.close()
+							})
+						}
 
 						init = true
 					}
@@ -313,56 +323,62 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 		}
 
 		const getPermissionMenu = function() {
-			const popup = $('<div>', {
-				class: 'popovermenu eurooffice-share-popup',
-				id: 'eurooffice-share-popup-menu',
-			}).append($('<ul>'), {
-				id: -1,
-			})
+			const popup = document.createElement('div')
+			popup.className = 'popovermenu eurooffice-share-popup'
+			popup.id = 'eurooffice-share-popup-menu'
+
+			const ul = document.createElement('ul')
+			ul.id = '-1'
+			popup.appendChild(ul)
 
 			const appendItem = function(checked, extra, name) {
-				const item = $('<li>').append($('<span>', {
-					class: 'eurooffice-share-action',
-				}).append($('<input>', {
-					id: 'extra-' + extra,
-					type: 'checkbox',
-					class: 'checkbox action-checkbox__checkbox focusable',
-					checked,
-				})).append($('<label>', {
-					for: 'extra-' + extra,
-					text: name,
-					class: 'eurooffice-share-label',
-				})))
+				const item = document.createElement('li')
+				const span = document.createElement('span')
+				span.className = 'eurooffice-share-action'
 
-				const input = item.find('input')
-				input.click(onClickSetPermissions)
+				const input = document.createElement('input')
+				input.id = 'extra-' + extra
+				input.type = 'checkbox'
+				input.className = 'checkbox action-checkbox__checkbox focusable'
+				input.checked = checked
+				input.addEventListener('click', onClickSetPermissions)
 
-				popup.find('ul').append(item)
+				const label = document.createElement('label')
+				label.htmlFor = 'extra-' + extra
+				label.textContent = name
+				label.className = 'eurooffice-share-label'
+
+				span.appendChild(input)
+				span.appendChild(label)
+				item.appendChild(span)
+
+				popup.querySelector('ul').appendChild(item)
 			}
 
 			const removeItems = function() {
-				const items = popup.find('li')
-				if (items) {
-					items.remove()
-				}
+				const items = popup.querySelectorAll('li')
+				items.forEach(item => item.remove())
 			}
 
 			const setTargetId = function(id) {
-				popup.find('ul').attr('id', id)
+				const ulElement = popup.querySelector('ul')
+				if (ulElement) {
+					ulElement.id = id
+				}
 			}
 
-			$el.append(popup)
+			el.appendChild(popup)
 
 			return {
 				isOpen() {
-					return popup.is(':visible')
+					return popup.style.display !== 'none' && popup.style.display !== ''
 				},
 
 				open(id, attributes, position) {
 					removeItems()
 
 					if (position) {
-						popup.css({ top: position.top })
+						popup.style.top = position.top + 'px'
 					}
 
 					attributes.forEach(attr => {
@@ -370,14 +386,14 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 					})
 
 					setTargetId(id)
-					popup.show()
+					popup.style.display = 'block'
 				},
 
 				close() {
 					removeItems()
 
 					setTargetId(-1)
-					popup.hide()
+					popup.style.display = 'none'
 					window.removeEventListener('click', listenOuterClicks)
 				},
 
@@ -390,23 +406,27 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 				},
 
 				block(value) {
-					popup.find('input').prop('disabled', value)
+					const inputs = popup.querySelectorAll('input')
+					inputs.forEach(input => {
+						input.disabled = value
+					})
 				},
 
 				getValues() {
 					const values = []
 
-					const items = popup.find('input')
-					for (let i = 0; i < items.length; i++) {
-						const extra = items[i].id.split('extra-')[1]
-						values[extra] = items[i].checked
-					}
+					const inputs = popup.querySelectorAll('input')
+					inputs.forEach(input => {
+						const extra = input.id.split('extra-')[1]
+						values[extra] = input.checked
+					})
 
 					return values
 				},
 
 				getTargetId() {
-					return popup.find('ul').attr('id')
+					const ulElement = popup.querySelector('ul')
+					return ulElement ? ulElement.id : null
 				},
 			}
 		}
@@ -417,7 +437,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			},
 
 			init(_el, _fileInfo) {
-				$el = $(_el)
+				el = _el
 
 				getTemplate(() => {
 					this.update(_fileInfo)
@@ -430,7 +450,12 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 					customEvents.on()
 				}
 
-				getContainer().children().remove()
+				const container = getContainer()
+				if (container) {
+					while (container.firstChild) {
+						container.removeChild(container.firstChild)
+					}
+				}
 
 				fileInfo = _fileInfo
 
@@ -445,7 +470,7 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 			},
 
 			clear() {
-				$el = null
+				el = null
 				format = null
 				fileInfo = null
 				collection = null
@@ -455,34 +480,26 @@ import AppDarkSvg from '../img/app-dark.svg?raw';
 	}
 
 	OCA.Eurooffice.GetShares = function(fileId, callback) {
-		$.ajax({
-			url: OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1/shares', 2) + fileId + '?format=json',
-			success: function onSuccess(response) {
-				callback(response.ocs.data)
-			},
-		})
+		axios.get(OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1/shares', 2) + fileId + '?format=json')
+			.then((response) => {
+				callback(response.data.ocs.data)
+			})
 	}
 
 	OCA.Eurooffice.SetShares = function(id, shareId, fileId, permissions, callback) {
-		const data = {
+		axios.put(OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1', 2) + 'shares?format=json', {
 			extraId: id,
 			shareId,
 			fileId,
 			permissions,
-		}
-
-		$.ajax({
-			method: 'PUT',
-			url: OC.linkToOCS('apps/' + OCA.Eurooffice.AppName + '/api/v1', 2) + 'shares?format=json',
-			data,
-			success: function onSuccess(response) {
-				callback(response.ocs.data)
-			},
 		})
+			.then((response) => {
+				callback(response.data.ocs.data)
+			})
 	}
 
 	if (OCA.Files.Sidebar && OCA.Files.Sidebar.registerTab) {
 		OCA.Files.Sidebar.registerTab(advancedTab)
 	}
 
-})(jQuery, OC)
+})(OC)

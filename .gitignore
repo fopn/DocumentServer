@@ -1,3 +1,6 @@
 /js
 /node_modules
 /vendor
+
+# Vite chunk-CSS output for async-imported Vue components
+/css/*.chunk.css

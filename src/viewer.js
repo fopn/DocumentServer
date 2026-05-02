@@ -21,8 +21,6 @@
  *
  */
 
-/* global $ */
-
 /**
  * @param {object} OCA Nextcloud OCA object
  */
@@ -81,12 +79,10 @@
 	if (OCA.Viewer) {
 		OCA.Eurooffice.frameSelector = '#euroofficeViewerFrame'
 
-		const mimes = $.map(OCA.Eurooffice.setting.formats, function(format) {
-			if (format.def) {
-				return format.mime
-			}
-		})
-		mimes.flat()
+		const mimes = OCA.Eurooffice.setting.formats
+			.filter(format => format.def)
+			.map(format => format.mime)
+			.flat()
 		OCA.Viewer.registerHandler({
 			id: OCA.Eurooffice.AppName,
 			group: null,

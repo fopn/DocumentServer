@@ -21,18 +21,18 @@
  *
  */
 
-/* global _, jQuery */
+/* global _ */
 
 import { spawnDialog } from '@nextcloud/vue/functions/dialog'
 import { defineAsyncComponent } from 'vue'
+import axios from '@nextcloud/axios'
 
 /**
- * @param {object} $ JQueryStatic object
  * @param {object} OC Nextcloud OCA object
  */
-(function($, OC) {
+(function(OC) {
 
-	$(document).ready(function() {
+	document.addEventListener('DOMContentLoaded', function() {
 		OCA.Eurooffice = Object.assign({}, OCA.Eurooffice)
 		if (!OCA.Eurooffice.AppName) {
 			OCA.Eurooffice = {
@@ -41,51 +41,97 @@ import { defineAsyncComponent } from 'vue'
 		}
 
 		const advToogle = function() {
-			$('#euroofficeSecretPanel').toggleClass('eurooffice-hide')
-			$('#euroofficeAdv .icon').toggleClass('icon-triangle-s icon-triangle-n')
-		}
-
-		if ($('#euroofficeInternalUrl').val().length
-			|| $('#euroofficeStorageUrl').val().length
-			|| $('#euroofficeJwtHeader').val().length) {
-			advToogle()
-		}
-
-		$('#euroofficeAdv').click(advToogle)
-
-		$('#euroofficeGroups').prop('checked', $('#euroofficeLimitGroups').val() !== '')
-
-		const groupListToggle = function() {
-			if ($('#euroofficeGroups').prop('checked')) {
-				OC.Settings.setupGroupsSelect($('#euroofficeLimitGroups'))
-			} else {
-				$('#euroofficeLimitGroups').select2('destroy')
+			const secretPanel = document.getElementById('euroofficeSecretPanel')
+			if (secretPanel) {
+				secretPanel.classList.toggle('eurooffice-hide')
+			}
+			const advIcon = document.querySelector('#euroofficeAdv .icon')
+			if (advIcon) {
+				advIcon.classList.toggle('icon-triangle-s')
+				advIcon.classList.toggle('icon-triangle-n')
 			}
 		}
 
-		$('#euroofficeGroups').click(groupListToggle)
-		groupListToggle()
+		const internalUrl = document.getElementById('euroofficeInternalUrl')
+		const storageUrl = document.getElementById('euroofficeStorageUrl')
+		const jwtHeader = document.getElementById('euroofficeJwtHeader')
+		if ((internalUrl && internalUrl.value.length)
+			|| (storageUrl && storageUrl.value.length)
+			|| (jwtHeader && jwtHeader.value.length)) {
+			advToogle()
+		}
 
+		const advButton = document.getElementById('euroofficeAdv')
+		if (advButton) {
+			advButton.addEventListener('click', advToogle)
+		}
+
+		const groupsCheckbox = document.getElementById('euroofficeGroups')
+		const limitGroupsSelect = document.getElementById('euroofficeLimitGroups')
+		if (groupsCheckbox && limitGroupsSelect) {
+			groupsCheckbox.checked = limitGroupsSelect.value !== ''
+		}
+
+		const groupListToggle = function() {
+			if (typeof window.$ !== 'function') return
+			if (groupsCheckbox && groupsCheckbox.checked) {
+				OC.Settings.setupGroupsSelect(window.$(limitGroupsSelect))
+			} else if (limitGroupsSelect) {
+				window.$(limitGroupsSelect).select2('destroy')
+			}
+		}
+
+		if (groupsCheckbox) {
+			groupsCheckbox.addEventListener('click', groupListToggle)
+			groupListToggle()
+		}
+
+		const demoCheckbox = document.getElementById('euroofficeDemo')
 		const demoToggle = function() {
-			$('#euroofficeAddrSettings input:not(#euroofficeStorageUrl)').prop('disabled', $('#euroofficeDemo').prop('checked'))
+			const addrInputs = document.querySelectorAll('#euroofficeAddrSettings input:not(#euroofficeStorageUrl)')
+			const isChecked = demoCheckbox && demoCheckbox.checked
+			addrInputs.forEach(input => {
+				input.disabled = isChecked
+			})
 		}
 
-		$('#euroofficeDemo').click(demoToggle)
-		demoToggle()
+		if (demoCheckbox) {
+			demoCheckbox.addEventListener('click', demoToggle)
+			demoToggle()
+		}
 
+		const watermarkEnabledCheckbox = document.getElementById('euroofficeWatermark_enabled')
+		const watermarkSettingsEl = document.getElementById('euroofficeWatermarkSettings')
 		const watermarkToggle = function() {
-			$('#euroofficeWatermarkSettings').toggleClass('eurooffice-hide', !$('#euroofficeWatermark_enabled').prop('checked'))
+			if (watermarkSettingsEl) {
+				const isChecked = watermarkEnabledCheckbox && watermarkEnabledCheckbox.checked
+				watermarkSettingsEl.classList.toggle('eurooffice-hide', !isChecked)
+			}
 		}
 
-		$('#euroofficeWatermark_enabled').click(watermarkToggle)
+		if (watermarkEnabledCheckbox) {
+			watermarkEnabledCheckbox.addEventListener('click', watermarkToggle)
+		}
 
-		$('#euroofficeWatermark_shareAll').click(function() {
-			$('#euroofficeWatermark_shareRead').parent().toggleClass('eurooffice-hide')
-		})
+		const watermarkShareAll = document.getElementById('euroofficeWatermark_shareAll')
+		if (watermarkShareAll) {
+			watermarkShareAll.addEventListener('click', function() {
+				const watermarkShareRead = document.getElementById('euroofficeWatermark_shareRead')
+				if (watermarkShareRead && watermarkShareRead.parentElement) {
+					watermarkShareRead.parentElement.classList.toggle('eurooffice-hide')
+				}
+			})
+		}
 
-		$('#euroofficeWatermark_linkAll').click(function() {
-			$('#euroofficeWatermark_link_sensitive').toggleClass('eurooffice-hide')
-		})
+		const watermarkLinkAll = document.getElementById('euroofficeWatermark_linkAll')
+		if (watermarkLinkAll) {
+			watermarkLinkAll.addEventListener('click', function() {
+				const watermarkLinkSensitive = document.getElementById('euroofficeWatermark_link_sensitive')
+				if (watermarkLinkSensitive) {
+					watermarkLinkSensitive.classList.toggle('eurooffice-hide')
+				}
+			})
+		}
 
 		const watermarkGroupLists = [
 			'allGroups',
@@ -98,11 +144,15 @@ import { defineAsyncComponent } from 'vue'
 
 		const watermarkNodeBehaviour = function(watermark) {
 			const watermarkListToggle = function() {
-				if ($('#euroofficeWatermark_' + watermark).prop('checked')) {
+				const watermarkCheckbox = document.getElementById('euroofficeWatermark_' + watermark)
+				if (watermarkCheckbox && watermarkCheckbox.checked) {
 					if (watermark.indexOf('Group') >= 0) {
-						OC.Settings.setupGroupsSelect($('#euroofficeWatermark_' + watermark + 'List'))
+						if (typeof window.$ !== 'function') return
+						const listElement = document.getElementById('euroofficeWatermark_' + watermark + 'List')
+						OC.Settings.setupGroupsSelect(window.$(listElement))
 					} else {
-						$('#euroofficeWatermark_' + watermark + 'List').select2({
+						if (typeof window.$ !== 'function') return
+						window.$('#euroofficeWatermark_' + watermark + 'List').select2({
 							allowClear: true,
 							closeOnSelect: false,
 							multiple: true,
@@ -115,7 +165,7 @@ import { defineAsyncComponent } from 'vue'
 								})
 							}, 100, true),
 							initSelection(element, callback) {
-								const selection = ($(element).val() || []).split('|').map(function(tagId) {
+								const selection = (element.value || '').split('|').map(function(tagId) {
 									return OC.SystemTags.collection.get(tagId)
 								})
 								callback(selection)
@@ -135,127 +185,165 @@ import { defineAsyncComponent } from 'vue'
 						})
 					}
 				} else {
-					$('#euroofficeWatermark_' + watermark + 'List').select2('destroy')
+					if (typeof window.$ === 'function') {
+						const listElement = document.getElementById('euroofficeWatermark_' + watermark + 'List')
+						if (listElement) {
+							window.$(listElement).select2('destroy')
+						}
+					}
 				}
 			}
 
-			$('#euroofficeWatermark_' + watermark).click(watermarkListToggle)
-			watermarkListToggle()
+			const watermarkCheckbox = document.getElementById('euroofficeWatermark_' + watermark)
+			if (watermarkCheckbox) {
+				watermarkCheckbox.addEventListener('click', watermarkListToggle)
+				watermarkListToggle()
+			}
 		}
 
-		$.each(watermarkGroupLists, function(i, watermarkGroup) {
+		watermarkGroupLists.forEach((watermarkGroup) => {
 			watermarkNodeBehaviour(watermarkGroup)
 		})
 
 		if (OC.SystemTags && OC.SystemTags.collection) {
 			OC.SystemTags.collection.fetch({
 				success() {
-					$.each(watermarkTagLists, function(i, watermarkTag) {
+					watermarkTagLists.forEach((watermarkTag) => {
 						watermarkNodeBehaviour(watermarkTag)
 					})
 				},
 			})
 		}
 
-		const connectionError = document.getElementById('euroofficeSettingsState').value
+		const connectionErrorEl = document.getElementById('euroofficeSettingsState')
+		const connectionError = connectionErrorEl ? connectionErrorEl.value : ''
 		if (connectionError !== '') {
 			OCP.Toast.error(t(OCA.Eurooffice.AppName, 'Error when trying to connect') + ' (' + connectionError + ')')
 		}
 
-		$('#euroofficeAddrSave').click(function() {
-			$('.section-eurooffice').addClass('icon-loading')
-			const euroofficeUrl = $('#euroofficeUrl').val().trim()
+		const addrSaveButton = document.getElementById('euroofficeAddrSave')
+		if (addrSaveButton) {
+			addrSaveButton.addEventListener('click', function() {
+				const section = document.querySelector('.section-eurooffice')
+				if (section) section.classList.add('icon-loading')
 
-			if (!euroofficeUrl.length) {
-				$('#euroofficeInternalUrl, #euroofficeStorageUrl, #euroofficeSecret, #euroofficeJwtHeader').val('')
-			}
+				const euroofficeUrl = (document.getElementById('euroofficeUrl')?.value || '').trim()
 
-			const euroofficeInternalUrl = ($('#euroofficeInternalUrl').val() || '').trim()
-			const euroofficeStorageUrl = ($('#euroofficeStorageUrl').val() || '').trim()
-			const euroofficeVerifyPeerOff = $('#euroofficeVerifyPeerOff').prop('checked')
-			const euroofficeSecret = ($('#euroofficeSecret').val() || '').trim()
-			const jwtHeader = ($('#euroofficeJwtHeader').val() || '').trim()
-			const demo = $('#euroofficeDemo').prop('checked')
+				if (!euroofficeUrl.length) {
+					const internalUrlEl = document.getElementById('euroofficeInternalUrl')
+					const storageUrlEl = document.getElementById('euroofficeStorageUrl')
+					const secretEl = document.getElementById('euroofficeSecret')
+					const jwtHeaderEl = document.getElementById('euroofficeJwtHeader')
+					if (internalUrlEl) internalUrlEl.value = ''
+					if (storageUrlEl) storageUrlEl.value = ''
+					if (secretEl) secretEl.value = ''
+					if (jwtHeaderEl) jwtHeaderEl.value = ''
+				}
 
-			$.ajax({
-				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/address'),
-				data: {
+				const euroofficeInternalUrl = (document.getElementById('euroofficeInternalUrl')?.value || '').trim()
+				const euroofficeStorageUrl = (document.getElementById('euroofficeStorageUrl')?.value || '').trim()
+				const verifyPeerOffCheckbox = document.getElementById('euroofficeVerifyPeerOff')
+				const euroofficeVerifyPeerOff = verifyPeerOffCheckbox ? verifyPeerOffCheckbox.checked : false
+				const euroofficeSecret = (document.getElementById('euroofficeSecret')?.value || '').trim()
+				const jwtHeaderVal = (document.getElementById('euroofficeJwtHeader')?.value || '').trim()
+				const demoEl = document.getElementById('euroofficeDemo')
+				const demo = demoEl ? demoEl.checked : false
+
+				axios.put(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/address'), {
 					documentserver: euroofficeUrl,
 					documentserverInternal: euroofficeInternalUrl,
 					storageUrl: euroofficeStorageUrl,
 					verifyPeerOff: euroofficeVerifyPeerOff,
 					secret: euroofficeSecret,
-					jwtHeader,
+					jwtHeader: jwtHeaderVal,
 					demo,
-				},
-				success: function onSuccess(response) {
-					$('.section-eurooffice').removeClass('icon-loading')
-					if (response && (response.documentserver != null || demo)) {
-						$('#euroofficeUrl').val(response.documentserver)
-						$('#euroofficeInternalUrl').val(response.documentserverInternal)
-						$('#euroofficeStorageUrl').val(response.storageUrl)
-						$('#euroofficeSecret').val(response.secret)
-						$('#euroofficeJwtHeader').val(response.jwtHeader)
+				})
+					.then((response) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
 
-						$('.section-eurooffice-common, .section-eurooffice-templates, .section-eurooffice-watermark').toggleClass('eurooffice-hide', (response.documentserver == null && !demo) || !!response.error.length)
+						const data = response.data
+						if (data && (data.documentserver != null || demo)) {
+							const urlInput = document.getElementById('euroofficeUrl')
+							const internalUrlInput = document.getElementById('euroofficeInternalUrl')
+							const storageUrlInput = document.getElementById('euroofficeStorageUrl')
+							const secretInput = document.getElementById('euroofficeSecret')
+							const jwtHeaderInput = document.getElementById('euroofficeJwtHeader')
+							if (urlInput) urlInput.value = data.documentserver
+							if (internalUrlInput) internalUrlInput.value = data.documentserverInternal
+							if (storageUrlInput) storageUrlInput.value = data.storageUrl
+							if (secretInput) secretInput.value = data.secret
+							if (jwtHeaderInput) jwtHeaderInput.value = data.jwtHeader
 
-						const versionMessage = response.version ? (' (' + t(OCA.Eurooffice.AppName, 'version') + ' ' + response.version + ')') : ''
+							const toggleSections = document.querySelectorAll('.section-eurooffice-common, .section-eurooffice-templates, .section-eurooffice-watermark')
+							const shouldHide = (data.documentserver == null && !demo) || !!data.error.length
+							toggleSections.forEach(el => el.classList.toggle('eurooffice-hide', shouldHide))
 
-						if (response.error) {
-							OCP.Toast.error(t(OCA.Eurooffice.AppName, 'Error when trying to connect') + ' (' + response.error + ')' + versionMessage)
-						} else {
-							if (response.secret !== null) {
-								OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Server settings have been successfully updated') + versionMessage)
+							const versionMessage = data.version ? (' (' + t(OCA.Eurooffice.AppName, 'version') + ' ' + data.version + ')') : ''
+
+							if (data.error) {
+								OCP.Toast.error(t(OCA.Eurooffice.AppName, 'Error when trying to connect') + ' (' + data.error + ')' + versionMessage)
 							} else {
-								spawnDialog(defineAsyncComponent(() => import('./views/EmptyJwtInfoDialog.vue')))
+								if (data.secret !== null) {
+									OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Server settings have been successfully updated') + versionMessage)
+								} else {
+									spawnDialog(defineAsyncComponent(() => import('./views/EmptyJwtInfoDialog.vue')))
+								}
 							}
+						} else {
+							const hideSections = document.querySelectorAll('.section-eurooffice-common, .section-eurooffice-templates, .section-eurooffice-watermark')
+							hideSections.forEach(el => el.classList.add('eurooffice-hide'))
 						}
-					} else {
-						$('.section-eurooffice-common, .section-eurooffice-templates, .section-eurooffice-watermark').addClass('eurooffice-hide')
-					}
-				},
+					})
+					.catch((error) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
+						OCP.Toast.error(error.message || t(OCA.Eurooffice.AppName, 'Failed to save settings'))
+					})
 			})
-		})
+		}
 
-		$('#euroofficeSave').click(function() {
-			$('.section-eurooffice').addClass('icon-loading')
+		const commonSaveButton = document.getElementById('euroofficeSave')
+		if (commonSaveButton) {
+			commonSaveButton.addEventListener('click', function() {
+				const section = document.querySelector('.section-eurooffice')
+				if (section) section.classList.add('icon-loading')
 
-			const defFormats = {}
-			$('input[id^="euroofficeDefFormat"]').each(function() {
-				defFormats[this.name] = this.checked
-			})
+				const defFormats = {}
+				document.querySelectorAll('input[id^="euroofficeDefFormat"]').forEach(function(input) {
+					defFormats[input.name] = input.checked
+				})
 
-			const editFormats = {}
-			$('input[id^="euroofficeEditFormat"]').each(function() {
-				editFormats[this.name] = this.checked
-			})
+				const editFormats = {}
+				document.querySelectorAll('input[id^="euroofficeEditFormat"]').forEach(function(input) {
+					editFormats[input.name] = input.checked
+				})
 
-			const sameTab = $('#euroofficeSameTab').is(':checked')
-			const enableSharing = $('#euroofficeEnableSharing').is(':checked')
-			const preview = $('#euroofficePreview').is(':checked')
-			const advanced = $('#euroofficeAdvanced').is(':checked')
-			const cronChecker = $('#euroofficeCronChecker').is(':checked')
-			const emailNotifications = $('#euroofficeEmailNotifications').is(':checked')
-			const versionHistory = $('#euroofficeVersionHistory').is(':checked')
+				const sameTab = document.getElementById('euroofficeSameTab')?.checked || false
+				const enableSharing = document.getElementById('euroofficeEnableSharing')?.checked || false
+				const preview = document.getElementById('euroofficePreview')?.checked || false
+				const advanced = document.getElementById('euroofficeAdvanced')?.checked || false
+				const cronChecker = document.getElementById('euroofficeCronChecker')?.checked || false
+				const emailNotifications = document.getElementById('euroofficeEmailNotifications')?.checked || false
+				const versionHistory = document.getElementById('euroofficeVersionHistory')?.checked || false
 
-			const limitGroupsString = $('#euroofficeGroups').prop('checked') ? $('#euroofficeLimitGroups').val() : ''
-			const limitGroups = limitGroupsString ? limitGroupsString.split('|') : []
+				const groupsCheckboxEl = document.getElementById('euroofficeGroups')
+				const limitGroupsElement = document.getElementById('euroofficeLimitGroups')
+				const limitGroupsString = (groupsCheckboxEl?.checked && limitGroupsElement) ? limitGroupsElement.value : ''
+				const limitGroups = limitGroupsString ? limitGroupsString.split('|') : []
 
-			const chat = $('#euroofficeChat').is(':checked')
-			const compactHeader = $('#euroofficeCompactHeader').is(':checked')
-			const feedback = $('#euroofficeFeedback').is(':checked')
-			const forcesave = $('#euroofficeForcesave').is(':checked')
-			const liveViewOnShare = $('#euroofficeLiveViewOnShare').is(':checked')
-			const help = $('#euroofficeHelp').is(':checked')
-			const reviewDisplay = $("input[type='radio'][name='reviewDisplay']:checked").attr('id').replace('euroofficeReviewDisplay_', '')
-			const theme = $("input[type='radio'][name='theme']:checked").attr('id').replace('euroofficeTheme_', '')
-			const unknownAuthor = $('#euroofficeUnknownAuthor').val().trim()
+				const chat = document.getElementById('euroofficeChat')?.checked || false
+				const compactHeader = document.getElementById('euroofficeCompactHeader')?.checked || false
+				const feedback = document.getElementById('euroofficeFeedback')?.checked || false
+				const forcesave = document.getElementById('euroofficeForcesave')?.checked || false
+				const liveViewOnShare = document.getElementById('euroofficeLiveViewOnShare')?.checked || false
+				const help = document.getElementById('euroofficeHelp')?.checked || false
+				const reviewDisplay = document.querySelector("input[type='radio'][name='reviewDisplay']:checked")?.id.replace('euroofficeReviewDisplay_', '') || ''
+				const theme = document.querySelector("input[type='radio'][name='theme']:checked")?.id.replace('euroofficeTheme_', '') || ''
+				const unknownAuthorInput = document.getElementById('euroofficeUnknownAuthor')
+				const unknownAuthor = unknownAuthorInput ? unknownAuthorInput.value.trim() : ''
 
-			$.ajax({
-				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/common'),
-				data: {
+				axios.put(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/common'), {
 					defFormats,
 					editFormats,
 					sameTab,
@@ -275,177 +363,226 @@ import { defineAsyncComponent } from 'vue'
 					reviewDisplay,
 					theme,
 					unknownAuthor,
-				},
-				success: function onSuccess(response) {
-					$('.section-eurooffice').removeClass('icon-loading')
-					if (response) {
-						OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Common settings have been successfully updated'))
-					}
-				},
+				})
+					.then((response) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
+						if (response.data) {
+							OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Common settings have been successfully updated'))
+						}
+					})
+					.catch((error) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
+						OCP.Toast.error(error.message || t(OCA.Eurooffice.AppName, 'Failed to save settings'))
+					})
 			})
-		})
+		}
 
-		$('#euroofficeSecuritySave').click(function() {
-			$('.section-eurooffice').addClass('icon-loading')
+		const securitySaveButton = document.getElementById('euroofficeSecuritySave')
+		if (securitySaveButton) {
+			securitySaveButton.addEventListener('click', function() {
+				const section = document.querySelector('.section-eurooffice')
+				if (section) section.classList.add('icon-loading')
 
-			const plugins = $('#euroofficePlugins').is(':checked')
-			const macros = $('#euroofficeMacros').is(':checked')
-			const protection = $("input[type='radio'][name='protection']:checked").attr('id').replace('euroofficeProtection_', '')
+				const plugins = document.getElementById('euroofficePlugins')?.checked || false
+				const macros = document.getElementById('euroofficeMacros')?.checked || false
+				const protection = document.querySelector("input[type='radio'][name='protection']:checked")?.id.replace('euroofficeProtection_', '') || ''
 
-			const watermarkSettings = {
-				enabled: $('#euroofficeWatermark_enabled').is(':checked'),
-			}
-			if (watermarkSettings.enabled) {
-				watermarkSettings.text = ($('#euroofficeWatermark_text').val() || '').trim()
+				const watermarkSettings = {
+					enabled: document.getElementById('euroofficeWatermark_enabled')?.checked || false,
+				}
+				if (watermarkSettings.enabled) {
+					const watermarkTextInput = document.getElementById('euroofficeWatermark_text')
+					watermarkSettings.text = watermarkTextInput ? watermarkTextInput.value.trim() : ''
 
-				const watermarkLabels = [
-					'allGroups',
-					'allTags',
-					'linkAll',
-					'linkRead',
-					'linkSecure',
-					'linkTags',
-					'shareAll',
-					'shareRead',
-				]
-				$.each(watermarkLabels, function(i, watermarkLabel) {
-					watermarkSettings[watermarkLabel] = $('#euroofficeWatermark_' + watermarkLabel).is(':checked')
-				})
+					const watermarkLabels = [
+						'allGroups',
+						'allTags',
+						'linkAll',
+						'linkRead',
+						'linkSecure',
+						'linkTags',
+						'shareAll',
+						'shareRead',
+					]
+					watermarkLabels.forEach((watermarkLabel) => {
+						const checkbox = document.getElementById('euroofficeWatermark_' + watermarkLabel)
+						watermarkSettings[watermarkLabel] = checkbox ? checkbox.checked : false
+					})
 
-				$.each(watermarkGroupLists.concat(watermarkTagLists), function(i, watermarkList) {
-					const list = $('#euroofficeWatermark_' + watermarkList).is(':checked') ? $('#euroofficeWatermark_' + watermarkList + 'List').val() : ''
-					watermarkSettings[watermarkList + 'List'] = list ? list.split('|') : []
-				})
-			}
+					watermarkGroupLists.concat(watermarkTagLists).forEach((watermarkList) => {
+						const checkbox = document.getElementById('euroofficeWatermark_' + watermarkList)
+						const listElement = document.getElementById('euroofficeWatermark_' + watermarkList + 'List')
+						const list = (checkbox?.checked && listElement) ? listElement.value : ''
+						watermarkSettings[watermarkList + 'List'] = list ? list.split('|') : []
+					})
+				}
 
-			$.ajax({
-				method: 'PUT',
-				url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/security'),
-				data: {
+				axios.put(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/security'), {
 					watermarks: watermarkSettings,
 					plugins,
 					macros,
 					protection,
-				},
-				success: function onSuccess(response) {
-					$('.section-eurooffice').removeClass('icon-loading')
-					if (response) {
-						OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Security settings have been successfully updated'))
-					}
-				},
+				})
+					.then((response) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
+						if (response.data) {
+							OCP.Toast.success(t(OCA.Eurooffice.AppName, 'Security settings have been successfully updated'))
+						}
+					})
+					.catch((error) => {
+						const sectionEl = document.querySelector('.section-eurooffice')
+						if (sectionEl) sectionEl.classList.remove('icon-loading')
+						OCP.Toast.error(error.message || t(OCA.Eurooffice.AppName, 'Failed to save settings'))
+					})
+			})
+		}
+
+		document.querySelectorAll('.section-eurooffice-addr input').forEach((input) => {
+			input.addEventListener('keypress', function(e) {
+				const code = e.keyCode || e.which
+				if (code === 13) {
+					const addrSaveBtn = document.getElementById('euroofficeAddrSave')
+					if (addrSaveBtn) addrSaveBtn.click()
+				}
 			})
 		})
 
-		$('.section-eurooffice-addr input').keypress(function(e) {
-			const code = e.keyCode || e.which
-			if (code === 13) {
-				$('#euroofficeAddrSave').click()
-			}
-		})
+		const secretShowButton = document.getElementById('euroofficeSecret-show')
+		if (secretShowButton) {
+			secretShowButton.addEventListener('click', function() {
+				const secretInput = document.getElementById('euroofficeSecret')
+				if (secretInput) {
+					if (secretInput.type === 'password') {
+						secretInput.type = 'text'
+					} else {
+						secretInput.type = 'password'
+					}
+				}
+			})
+		}
 
-		$('#euroofficeSecret-show').click(function() {
-			if ($('#euroofficeSecret').attr('type') === 'password') {
-				$('#euroofficeSecret').attr('type', 'text')
-			} else {
-				$('#euroofficeSecret').attr('type', 'password')
-			}
-		})
+		const clearVersionHistoryButton = document.getElementById('euroofficeClearVersionHistory')
+		if (clearVersionHistoryButton) {
+			clearVersionHistoryButton.addEventListener('click', function() {
+				OC.dialogs.confirm(
+					t(OCA.Eurooffice.AppName, 'Are you sure you want to clear metadata?'),
+					t(OCA.Eurooffice.AppName, 'Confirm metadata removal'),
+					(clicked) => {
+						if (!clicked) {
+							return
+						}
 
-		$('#euroofficeClearVersionHistory').click(function() {
-			OC.dialogs.confirm(
-				t(OCA.Eurooffice.AppName, 'Are you sure you want to clear metadata?'),
-				t(OCA.Eurooffice.AppName, 'Confirm metadata removal'),
-				(clicked) => {
-					if (!clicked) {
+						const section = document.querySelector('.section-eurooffice')
+						if (section) section.classList.add('icon-loading')
+
+						axios.delete(OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/history'))
+							.then((response) => {
+								const sectionEl = document.querySelector('.section-eurooffice')
+								if (sectionEl) sectionEl.classList.remove('icon-loading')
+								if (response.data) {
+									OCP.Toast.success(t(OCA.Eurooffice.AppName, 'All history successfully deleted'))
+								}
+							})
+							.catch((error) => {
+								const sectionEl = document.querySelector('.section-eurooffice')
+								if (sectionEl) sectionEl.classList.remove('icon-loading')
+								OCP.Toast.error(error.message || t(OCA.Eurooffice.AppName, 'Failed to clear history'))
+							})
+					},
+				)
+			})
+		}
+
+		const addTemplateInput = document.getElementById('euroofficeAddTemplate')
+		if (addTemplateInput) {
+			addTemplateInput.addEventListener('change', function() {
+				const file = this.files[0]
+				const data = new FormData()
+
+				data.append('file', file)
+
+				const section = document.querySelector('.section-eurooffice')
+				if (section) section.classList.add('icon-loading')
+				OCA.Eurooffice.AddTemplate(file, (template, error) => {
+
+					const sectionEl = document.querySelector('.section-eurooffice')
+					if (sectionEl) sectionEl.classList.remove('icon-loading')
+					const message = error
+						? t(OCA.Eurooffice.AppName, 'Error') + ': ' + error
+						: t(OCA.Eurooffice.AppName, 'Template successfully added')
+
+					if (error) {
+						OCP.Toast.error(message)
 						return
 					}
 
-					$('.section-eurooffice').addClass('icon-loading')
+					if (template) {
+						OCA.Eurooffice.AttachItemTemplate(template)
+					}
+					OCP.Toast.success(message)
+				})
+			})
+		}
 
-					$.ajax({
-						method: 'DELETE',
-						url: OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/ajax/settings/history'),
-						success: function onSuccess(response) {
-							$('.section-eurooffice').removeClass('icon-loading')
-							if (response) {
-								OCP.Toast.success(t(OCA.Eurooffice.AppName, 'All history successfully deleted'))
-							}
-						},
+		document.addEventListener('click', function(event) {
+			if (event.target.classList.contains('eurooffice-template-delete')) {
+				const item = event.target.closest('.eurooffice-template-item')
+				const templateId = item ? item.getAttribute('data-id') : null
+
+				if (!templateId) return
+
+				const section = document.querySelector('.section-eurooffice')
+				if (section) section.classList.add('icon-loading')
+				OCA.Eurooffice.DeleteTemplate(templateId, (response) => {
+					const sectionEl = document.querySelector('.section-eurooffice')
+					if (sectionEl) sectionEl.classList.remove('icon-loading')
+
+					const message = response.error
+						? t(OCA.Eurooffice.AppName, 'Error') + ': ' + response.error
+						: t(OCA.Eurooffice.AppName, 'Template successfully deleted')
+					if (response.error) {
+						OCP.Toast.error(message)
+						return
+					}
+
+					if (item && item.parentNode) {
+						item.parentNode.removeChild(item)
+					}
+					OCP.Toast.success(message)
+				})
+			}
+
+			if (event.target.matches('.eurooffice-template-item p')) {
+				const item = event.target.closest('.eurooffice-template-item')
+				const templateId = item ? item.getAttribute('data-id') : null
+
+				if (!templateId) return
+
+				const url = OC.generateUrl('/apps/' + OCA.Eurooffice.AppName + '/{fileId}?template={template}',
+					{
+						fileId: templateId,
+						template: 'true',
 					})
-				},
-			)
-		})
 
-		$('#euroofficeAddTemplate').change(function() {
-			const file = this.files[0]
-			const data = new FormData()
+				window.open(url)
+			}
 
-			data.append('file', file)
+			if (event.target.classList.contains('eurooffice-template-download')) {
+				const item = event.target.closest('.eurooffice-template-item')
+				const templateId = item ? item.getAttribute('data-id') : null
 
-			$('.section-eurooffice').addClass('icon-loading')
-			OCA.Eurooffice.AddTemplate(file, (template, error) => {
+				if (!templateId) return
 
-				$('.section-eurooffice').removeClass('icon-loading')
-				const message = error
-					? t(OCA.Eurooffice.AppName, 'Error') + ': ' + error
-					: t(OCA.Eurooffice.AppName, 'Template successfully added')
-
-				if (error) {
-					OCP.Toast.error(message)
-					return
-				}
-
-				if (template) {
-					OCA.Eurooffice.AttachItemTemplate(template)
-				}
-				OCP.Toast.success(message)
-			})
-		})
-
-		$(document).on('click', '.eurooffice-template-delete', function(event) {
-			const item = $(event.target).parents('.eurooffice-template-item')
-			const templateId = $(item).attr('data-id')
-
-			$('.section-eurooffice').addClass('icon-loading')
-			OCA.Eurooffice.DeleteTemplate(templateId, (response) => {
-				$('.section-eurooffice').removeClass('icon-loading')
-
-				const message = response.error
-					? t(OCA.Eurooffice.AppName, 'Error') + ': ' + response.error
-					: t(OCA.Eurooffice.AppName, 'Template successfully deleted')
-				if (response.error) {
-					OCP.Toast.error(message)
-					return
-				}
-
-				$(item).detach()
-				OCP.Toast.success(message)
-			})
-		})
-
-		$(document).on('click', '.eurooffice-template-item p', function(event) {
-			const item = $(event.target).parents('.eurooffice-template-item')
-			const templateId = $(item).attr('data-id')
-
-			const url = OC.generateUrl('/apps/' + OCA.Eurooffice.AppName + '/{fileId}?template={template}',
-				{
+				const downloadLink = OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/downloadas?fileId={fileId}&template={template}', {
 					fileId: templateId,
 					template: 'true',
 				})
 
-			window.open(url)
-		})
-
-		$(document).on('click', '.eurooffice-template-download', function(event) {
-			const item = $(event.target).parents('.eurooffice-template-item')
-			const templateId = $(item).attr('data-id')
-
-			const downloadLink = OC.generateUrl('apps/' + OCA.Eurooffice.AppName + '/downloadas?fileId={fileId}&template={template}', {
-				fileId: templateId,
-				template: 'true',
-			})
-
-			location.href = downloadLink
+				location.href = downloadLink
+			}
 		})
 
 		const sameTabCheckbox = document.getElementById('euroofficeSameTab')
@@ -459,4 +596,4 @@ import { defineAsyncComponent } from 'vue'
 		}
 	})
 
-})(jQuery, OC)
+})(OC)
