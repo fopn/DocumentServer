@@ -17,19 +17,20 @@ services:
     environment:
       ALLOW_PRIVATE_IP_ADDRESS: true
       USE_UNAUTHORIZED_STORAGE: true
-      JWT_SECRET: secret
+      JWT_SECRET: ${EO_JWT_SECRET:-euro-office-dev-jwt-secret-key-2026}
       THEME: euro-office
     volumes:
       - ../:/develop # mounts deployed files to application
       - ./setup/Makefile:/Makefile # mounts deployed files to application
   nextcloud:
-    image: nextcloud:latest
+    image: nextcloud:${NC_VERSION:-latest}
     container_name: nextcloud
     ports:
       - "8081:80"
     volumes:
       - /var/www/html
       - ./setup/enable-office.sh:/docker-entrypoint-hooks.d/post-installation/enable-office.sh:ro
+      - ../../eurooffice-nextcloud:/var/www/html/custom_apps/eurooffice:ro
     environment:
       # 10.0.2.2 = Android emulator's alias for host. Mobile/LAN IPs are
       # applied post-boot by `make refresh-urls` so the container env stays
@@ -46,5 +47,5 @@ services:
     environment:
       ALLOW_PRIVATE_IP_ADDRESS: true
       USE_UNAUTHORIZED_STORAGE: true
-      JWT_SECRET: secret
+      JWT_SECRET: ${EO_JWT_SECRET:-euro-office-dev-jwt-secret-key-2026}
 
