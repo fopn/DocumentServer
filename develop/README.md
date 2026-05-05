@@ -3,6 +3,12 @@
 
 The docker compose environment in this directory allows to run document server built from our code base. It runs a container called develop, which just adds the development (i.e., build) tooling to the finalubuntu container. This lets you build pieces on the fly directly inside the container, saving build time when developing:
 
+- Clone the Euro-Office Nextcloud connector as a sibling of `DocumentServer` (i.e. inside the same `euro-office-public` parent):
+  ```sh
+  git clone https://github.com/Euro-Office/eurooffice-nextcloud.git ../../eurooffice-nextcloud
+  cd ../../eurooffice-nextcloud && git submodule update --init --recursive && npm install && npm run build && composer install --no-dev
+  cd ../DocumentServer/develop
+  ```
 - Follow the repo cloning steps in the build readme
 - In DocumentServer/develop, start the containers and get into eo bash with either: 
   - `make` to use the image that is currently available locally
@@ -16,11 +22,11 @@ The docker compose environment in this directory allows to run document server b
 #### Using the image:
 
 - It's exposed at `http://localhost:8081/`
-- Nextclouds onlyoffice app should be installed and configured automatically. If not follow the next steps
-    - Install the onlyoffice app with the UI, or via `docker compose exec nextcloud bash` -> `php occ app:install onlyoffice`
-    - Configure your instance at `http://localhost:8081/settings/admin/onlyoffice`:
+- The Euro-Office Nextcloud connector (`eurooffice`) is installed and configured automatically. If not, follow these steps:
+    - Install via `docker compose exec nextcloud bash` -> `php occ app:enable eurooffice`
+    - Configure your instance at `http://localhost:8081/settings/admin/eurooffice`:
         - Docs address `http://localhost:8080/`
-        - Server address for internal requests from ONLYOFFICE Docs `http://nextcloud/`
+        - Server address for internal requests from Euro-Office Docs `http://nextcloud/`
         - Docs address for internal requests from Nextcloud `http://eo/`
         - Secret key: `secret`
     - Navigate to Files `http://localhost:8081/apps/files/`, create a document, and try to open it
@@ -48,7 +54,27 @@ When your LAN IP changes (new wifi, tethering, etc.), update the running stack w
 make refresh-urls
 ```
 
-Switching between `make local` and `make mobile` on an already-started stack is supported — both targets re-apply the correct URLs and trusted domains on each run.
+Switching between `make local` and `make mobile` on a running stack is supported — both targets re-apply the correct URLs and trusted domains on each run.
+
+#### Testing against a future Nextcloud version
+
+`make local` follows `nextcloud:latest` from Docker Hub — current stable.
+
+Use `make next` when you specifically need to test against an unreleased or non-current NC: `master`, `stable33`, `stable34`, etc.
+
+Run from `DocumentServer/develop/`:
+
+```sh
+make next                           # master (current NC dev trunk)
+make next NC_BRANCH=stable33        # NC33 stable
+make next NC_BRANCH=stable34        # NC34 stable (once cut)
+```
+
+`make next` swaps the official image for the source-clone dev image (`nextcloud-docker-dev`) via `docker-compose.next.yml`, and gives each NC branch its own named volume — switching between branches preserves each branch's installed state (eurooffice config, files, sessions). Compose detects the volume mount change and recreates the container automatically; no manual stop/rm.
+
+First boot per branch will be several minutes while NC clones and installs into the empty volume; subsequent switches reattach to the warm volume in seconds. Wipe a single branch with `docker volume rm nc_data_<branch>`.
+
+> Note: tracking `master` means NC's code moves between sessions. If you see `Nextcloud or one of the apps require upgrade` in `make next` output, run `docker compose exec -u www-data nextcloud ./occ upgrade` (or wipe the volume and then run `make next`).
 
 #### Building changes:
 

@@ -1,0 +1,39 @@
+# "Next NC" testing variant — opt-in via `make next` (or explicit
+# `-f docker-compose.yml -f docker-compose.next.yml ...`). Use this to test
+# against future Nextcloud versions before they ship as `nextcloud:latest`.
+#
+# Switches the NC container from the official Docker Hub image (used by `make local`)
+# to the source-clone nextcloud-docker-dev image, enabling NC version switching by
+# branch (master / stable33 / stable34) instead of by Docker Hub release tag.
+#
+# Each NC_BRANCH gets its own named volume, so switching between branches preserves
+# each branch's installed state (eurooffice config, files, sessions, etc.).
+#
+# Usage (run from DocumentServer/develop/):
+#   make next                                    (master, current NC dev trunk)
+#   make next NC_BRANCH=stable33                 (NC33 stable)
+#   make next NC_BRANCH=stable34                 (NC34 stable, once cut)
+#
+# Compose detects the volume mount change and recreates the nextcloud container
+# automatically; no manual stop/rm needed when switching NC_BRANCH.
+#
+# To wipe a single branch without touching the others:
+#   docker volume rm euro-officedevelopmentenvironment_nc_data_<branch>
+
+services:
+  nextcloud:
+    image: ghcr.io/juliusknorr/nextcloud-dev-php82:latest
+    environment:
+      SERVER_BRANCH: ${NC_BRANCH:-master}
+      SQL: sqlite
+    volumes:
+      - nc_data:/var/www/html
+      - ../../eurooffice-nextcloud:/var/www/html/apps-extra/eurooffice
+      - ./setup/shared:/shared
+
+volumes:
+  nc_data:
+    # Per-branch volume name via interpolation. Each NC_BRANCH value gets its
+    # own actual Docker volume (nc_data_master, nc_data_stable33, …) so state
+    # is preserved across switches without listing every supported branch.
+    name: nc_data_${NC_BRANCH:-master}
