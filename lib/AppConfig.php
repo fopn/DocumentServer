@@ -1293,7 +1293,7 @@ class AppConfig {
     }
 
     /**
-     * Get Euro-Office formats list
+     * Get Nextcloud Office formats list
      */
     private function buildEuroofficeFormats(): array {
         try {
@@ -1410,7 +1410,7 @@ class AppConfig {
      * DEMO DATA
      */
     private array $DEMO_PARAM = [
-        "ADDR" => "", // TODO: set Euro-Office demo server URL
+        "ADDR" => "", // TODO: set Nextcloud Office demo server URL
         "HEADER" => "AuthorizationJWT",
         "SECRET" => "sn2puSUF7muF5Jas",
         "TRIAL" => 30

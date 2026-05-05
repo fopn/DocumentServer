@@ -59,10 +59,10 @@ export default {
 
 	computed: {
 		warningHtml() {
-			const securityUrl = 'https://github.com/Euro-Office/eurooffice-nextcloud'
+			const securityUrl = 'https://github.com/Nextcloud Office/eurooffice-nextcloud'
 			return t(
 				'eurooffice',
-				'To ensure the security of important parameters in Euro-Office requests, please set a Secret Key on the Settings page. To learn more, <a href="{url}" target="_blank">click here</a>.',
+				'To ensure the security of important parameters in Nextcloud Office requests, please set a Secret Key on the Settings page. To learn more, <a href="{url}" target="_blank">click here</a>.',
 				{ url: securityUrl },
 				{ escape: false, sanitize: false },
 			)

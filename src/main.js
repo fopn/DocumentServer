@@ -518,7 +518,7 @@ import { loadState } from '@nextcloud/initial-state'
 				mimeTypes.forEach((mime) => {
 					OCA.Files.fileActions.registerAction({
 						name: 'euroofficeOpen',
-						displayName: t(OCA.Eurooffice.AppName, 'Open in Euro-Office'),
+						displayName: t(OCA.Eurooffice.AppName, 'Open in Nextcloud Office'),
 						mime,
 						permissions: OC.PERMISSION_READ,
 						iconClass: 'icon-eurooffice-open',
@@ -532,7 +532,7 @@ import { loadState } from '@nextcloud/initial-state'
 					if (config.conv) {
 						OCA.Files.fileActions.registerAction({
 							name: 'euroofficeConvert',
-							displayName: t(OCA.Eurooffice.AppName, 'Convert with Euro-Office'),
+							displayName: t(OCA.Eurooffice.AppName, 'Convert with Nextcloud Office'),
 							mime,
 							permissions: (isPublicShare() ? OC.PERMISSION_UPDATE : OC.PERMISSION_READ),
 							iconClass: 'icon-eurooffice-convert',
@@ -566,7 +566,7 @@ import { loadState } from '@nextcloud/initial-state'
 		} else {
 			registerFileAction({
 				id: 'eurooffice-open-def',
-				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Euro-Office'),
+				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Nextcloud Office'),
 				iconSvgInline: () => AppDarkSvg,
 				enabled: ({ nodes: files }) => {
 					const config = getConfig(files[0])
@@ -585,7 +585,7 @@ import { loadState } from '@nextcloud/initial-state'
 
 			registerFileAction({
 				id: 'eurooffice-open',
-				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Euro-Office'),
+				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Nextcloud Office'),
 				iconSvgInline: () => AppDarkSvg,
 				enabled: ({ nodes: files }) => {
 					const config = getConfig(files[0])
@@ -604,7 +604,7 @@ import { loadState } from '@nextcloud/initial-state'
 
 			registerFileAction({
 				id: 'eurooffice-convert',
-				displayName: () => t(OCA.Eurooffice.AppName, 'Convert with Euro-Office'),
+				displayName: () => t(OCA.Eurooffice.AppName, 'Convert with Nextcloud Office'),
 				iconSvgInline: () => AppDarkSvg,
 				enabled: ({ nodes: files }) => {
 					const config = getConfig(files[0])
@@ -815,7 +815,7 @@ import { loadState } from '@nextcloud/initial-state'
 
 			registerFileAction({
 				id: 'eurooffice-public-open',
-				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Euro-Office'),
+				displayName: () => t(OCA.Eurooffice.AppName, 'Open in Nextcloud Office'),
 				iconSvgInline: () => AppDarkSvg,
 				enabled: ({ nodes: files }) => {
 					if (Permission.READ !== (files[0].permissions & Permission.READ)) { return false }

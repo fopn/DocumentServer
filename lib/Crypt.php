@@ -48,7 +48,7 @@ class Crypt {
         try {
             return JWT::encode($object, $this->appConfig->getSKey(), "HS256");
         } catch (DomainException $e) {
-            throw new \RuntimeException("JWT secret key is too short (minimum 32 characters required). Please update the Secret Key in Euro-Office settings.", 0, $e);
+            throw new \RuntimeException("JWT secret key is too short (minimum 32 characters required). Please update the Secret Key in Nextcloud Office settings.", 0, $e);
         }
     }
 

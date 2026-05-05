@@ -772,7 +772,7 @@ class EditorController extends Controller {
 
         if (empty($documentServerUrl)) {
             $this->logger->error("documentServerUrl is empty");
-            return new DataResponse(["error" => $this->trans->t("Euro-Office app is not configured. Please contact admin")]);
+            return new DataResponse(["error" => $this->trans->t("Nextcloud Office app is not configured. Please contact admin")]);
         }
 
         if (str_starts_with($documentServerUrl, "/")) {
@@ -1319,7 +1319,7 @@ class EditorController extends Controller {
 
         if (empty($documentServerUrl)) {
             $this->logger->error("documentServerUrl is empty");
-            return $this->renderError($this->trans->t("Euro-Office app is not configured. Please contact admin"));
+            return $this->renderError($this->trans->t("Nextcloud Office app is not configured. Please contact admin"));
         }
 
         $params = [

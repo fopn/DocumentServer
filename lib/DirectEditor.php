@@ -59,7 +59,7 @@ class DirectEditor implements IEditor {
      * Return a readable name for the editor
      */
     public function getName(): string {
-        return "Euro-Office";
+        return "Nextcloud Office";
     }
 
     /**
@@ -150,7 +150,7 @@ class DirectEditor implements IEditor {
 
             if (empty($documentServerUrl)) {
                 $this->logger->error("documentServerUrl is empty");
-                return $this->renderError($this->trans->t("Euro-Office app is not configured. Please contact admin"));
+                return $this->renderError($this->trans->t("Nextcloud Office app is not configured. Please contact admin"));
             }
 
             $directToken = $this->crypt->getHash([

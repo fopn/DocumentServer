@@ -107,7 +107,7 @@ import axios from '@nextcloud/axios'
 				el.appendChild(ul)
 
 				const div = document.createElement('div')
-				div.textContent = t(OCA.Eurooffice.AppName, 'Provide advanced document permissions using Euro-Office')
+				div.textContent = t(OCA.Eurooffice.AppName, 'Provide advanced document permissions using Nextcloud Office')
 				el.insertBefore(div, el.firstChild)
 			}
 

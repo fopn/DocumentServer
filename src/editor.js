@@ -89,7 +89,7 @@ import axios from '@nextcloud/axios'
 					}
 
 					if (!config.documentServerUrl) {
-						OCA.Eurooffice.showMessage('Euro-Office cannot be reached. Please contact admin', 'error', { timeout: -1 })
+						OCA.Eurooffice.showMessage('Nextcloud Office cannot be reached. Please contact admin', 'error', { timeout: -1 })
 						return
 					}
 
@@ -97,11 +97,11 @@ import axios from '@nextcloud/axios'
 					script.src = config.documentServerUrl + 'web-apps/apps/api/documents/api.js?shardKey=' + config.document.key
 					script.setAttribute('nonce', btoa(OC.requestToken))
 					script.onerror = function() {
-						OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'Euro-Office cannot be reached. Please contact admin'), 'error', { timeout: -1 })
+						OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'Nextcloud Office cannot be reached. Please contact admin'), 'error', { timeout: -1 })
 					}
 					script.onload = function() {
 						if (typeof DocsAPI === 'undefined') {
-							OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'Euro-Office cannot be reached. Please contact admin'), 'error', { timeout: -1 })
+							OCA.Eurooffice.showMessage(t(OCA.Eurooffice.AppName, 'Nextcloud Office cannot be reached. Please contact admin'), 'error', { timeout: -1 })
 							return
 						}
 
@@ -143,7 +143,7 @@ import axios from '@nextcloud/axios'
 
 						if (config.editorConfig.tenant) {
 							config.events.onAppReady = function() {
-								OCA.Eurooffice.docEditor.showMessage(t(OCA.Eurooffice.AppName, 'You are using public demo Euro-Office server. Please do not store private sensitive data.'))
+								OCA.Eurooffice.docEditor.showMessage(t(OCA.Eurooffice.AppName, 'You are using public demo Nextcloud Office server. Please do not store private sensitive data.'))
 							}
 						}
 

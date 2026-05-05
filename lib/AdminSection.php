@@ -53,7 +53,7 @@ class AdminSection implements IIconSection {
      * Name of the section
      */
     public function getName(): string {
-        return "Euro-Office";
+        return "Nextcloud Office";
     }
 
     /**

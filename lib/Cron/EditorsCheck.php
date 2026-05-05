@@ -79,20 +79,20 @@ class EditorsCheck extends TimedJob {
         }
         $host = parse_url((string) $fileUrl)["host"];
         if ($host === "localhost" || $host === "127.0.0.1") {
-            $this->logger->debug("Localhost is not alowed for cron editors availability check. Please provide server address for internal requests from Euro-Office Docs");
+            $this->logger->debug("Localhost is not alowed for cron editors availability check. Please provide server address for internal requests from Nextcloud Office Docs");
             return;
         }
 
-        $this->logger->debug("Euro-Office check started by cron");
+        $this->logger->debug("Nextcloud Office check started by cron");
 
         [$error, $version] = $this->documentService->checkDocServiceUrl();
 
         if (!empty($error)) {
-            $this->logger->info("Euro-Office server is not available");
+            $this->logger->info("Nextcloud Office server is not available");
             $this->appConfig->setSettingsError($error);
             $this->notifyAdmins();
         } else {
-            $this->logger->debug("Euro-Office server availability check is finished successfully");
+            $this->logger->debug("Nextcloud Office server availability check is finished successfully");
         }
     }
 
@@ -126,7 +126,7 @@ class EditorsCheck extends TimedJob {
         $notification = $notificationManager->createNotification();
         $notification->setApp($this->appName)
             ->setDateTime(new \DateTime())
-            ->setObject("editorsCheck", $this->trans->t("Euro-Office server is not available"))
+            ->setObject("editorsCheck", $this->trans->t("Nextcloud Office server is not available"))
             ->setSubject("editorscheck_info");
         foreach ($this->getUsersToNotify() as $uid) {
             $notification->setUser($uid);

@@ -119,7 +119,7 @@ class SettingsController extends Controller {
     ): DataResponse {
         $error = null;
         if (!$this->appConfig->selectDemo($demo === true)) {
-            $error = $this->trans->t("The 30-day test period is over, you can no longer connect to demo Euro-Office server.");
+            $error = $this->trans->t("The 30-day test period is over, you can no longer connect to demo Nextcloud Office server.");
         }
         if ($demo !== true) {
             $this->appConfig->setDocumentServerUrl($documentserver);
