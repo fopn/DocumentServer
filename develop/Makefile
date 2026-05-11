@@ -40,6 +40,17 @@ else
 endif
 	@echo ""
 	docker compose up -d
+	@if [ "$$(docker inspect --format '{{.State.Status}}' nextcloud 2>/dev/null)" != "running" ]; then \
+	  if docker compose logs nextcloud 2>&1 | grep -q "version of the data"; then \
+	    echo ""; \
+	    echo "   WARNING: Nextcloud failed to start — your local nextcloud:latest image is"; \
+	    echo "   behind the data volume. Pull the latest image and retry:"; \
+	    echo ""; \
+	    echo "      docker pull nextcloud:latest && make"; \
+	    echo ""; \
+	    exit 1; \
+	  fi; \
+	fi
 	@$(MAKE) --no-print-directory refresh-urls
 	@$(MAKE) --no-print-directory print-nc-version
 	@docker compose exec eo bash || true
