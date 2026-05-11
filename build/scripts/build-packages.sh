@@ -31,7 +31,7 @@ echo "==> [build-packages] PRODUCT_VERSION=${PRODUCT_VERSION}, BUILD_NUMBER=${BU
 # ---------------------------------------------------------------------------
 echo "==> Setting up output directory: ${OUT_DIR}"
 mkdir -p "${OUT_DIR}"
-cp -a /var/www/onlyoffice/documentserver/. "${OUT_DIR}/"
+cp -a /build/documentserver/. "${OUT_DIR}/"
 
 # Remove the Docker-specific runtime marker (upstream Makefile doesn't expect it)
 rm -f "${OUT_DIR}/server/Common/config/runtime.json"
@@ -68,8 +68,8 @@ cp -a /server-src/license/.     "${OUT_DIR}/server/license/"
 # ---------------------------------------------------------------------------
 echo "==> Setting up example output directory: ${EXAMPLE_OUT}"
 mkdir -p "${EXAMPLE_OUT}/config"
-cp -f /var/www/onlyoffice/documentserver-example/example "${EXAMPLE_OUT}/"
-cp -f /etc/onlyoffice/documentserver-example/*.json "${EXAMPLE_OUT}/config/" 2>/dev/null || true
+cp -f /build/documentserver-example/example "${EXAMPLE_OUT}/"
+cp -f /config/documentserver-example/*.json "${EXAMPLE_OUT}/config/" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
 # 6. Run upstream Makefile

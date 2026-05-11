@@ -1,8 +1,8 @@
 #!/bin/sh
 
 update_welcome_page() {
-    WELCOME_PAGE="/var/www/onlyoffice/documentserver-example/welcome/docker.html"
-    EXAMPLE_DISABLED_PAGE="/var/www/onlyoffice/documentserver-example/welcome/example-disabled.html"
+    WELCOME_PAGE="/var/www/euro-office/documentserver-example/welcome/docker.html"
+    EXAMPLE_DISABLED_PAGE="/var/www/euro-office/documentserver-example/welcome/example-disabled.html"
 
     # Replace systemctl placeholder (set at build time) with docker+supervisorctl equivalent
     sed -i 's|sudo systemctl start ds-example|sudo docker exec $(sudo docker ps -q) supervisorctl start ds:example|g' \
@@ -27,8 +27,8 @@ update_welcome_page() {
     fi
 }
 
-# Create symlink for /config -> /etc/onlyoffice/documentserver so tools can find config
-ln -sf /etc/onlyoffice/documentserver /config 2>/dev/null || true
+# Create symlink for /config -> /etc/euro-office/documentserver so tools can find config
+ln -sf /etc/euro-office/documentserver /config 2>/dev/null || true
 
 service postgresql start
 runuser -u rabbitmq -- rabbitmq-server -detached
@@ -36,9 +36,9 @@ service redis-server start
 service nginx start
 
 # Ensure the api.js.tpl template exists (required by documentserver-flush-cache.sh)
-API_TPL="/var/www/onlyoffice/documentserver/web-apps/apps/api/documents/api.js.tpl"
-if [ ! -f "$API_TPL" ] && [ -f "/var/www/onlyoffice/documentserver/web-apps/apps/api/documents/api.js" ]; then
-    cp /var/www/onlyoffice/documentserver/web-apps/apps/api/documents/api.js "$API_TPL"
+API_TPL="/var/www/euro-office/documentserver/web-apps/apps/api/documents/api.js.tpl"
+if [ ! -f "$API_TPL" ] && [ -f "/var/www/euro-office/documentserver/web-apps/apps/api/documents/api.js" ]; then
+    cp /var/www/euro-office/documentserver/web-apps/apps/api/documents/api.js "$API_TPL"
 fi
 
 # Generate all fonts (AllFonts.js, font_selection.bin, presentation themes)
@@ -89,7 +89,7 @@ enable_supervisor_program() {
 [ "${EXAMPLE_ENABLED:-false}" = "true" ]    && enable_supervisor_program ds-example
 
 # Update example app config with JWT settings
-EXAMPLE_CONF_DIR="/etc/onlyoffice/documentserver-example"
+EXAMPLE_CONF_DIR="/etc/euro-office/documentserver-example"
 EXAMPLE_LOCAL="${EXAMPLE_CONF_DIR}/local.json"
 if [ "${EXAMPLE_ENABLED:-false}" = "true" ] && [ -n "$JWT_SECRET" ]; then
   jq -n \
@@ -97,6 +97,8 @@ if [ "${EXAMPLE_ENABLED:-false}" = "true" ] && [ -n "$JWT_SECRET" ]; then
     --arg header "${JWT_HEADER:-Authorization}" \
     '{
       "server": {
+        "siteUrl": "/",
+        "exampleUrl": "http://localhost/example/",
         "token": {
           "enable": true,
           "secret": $secret,

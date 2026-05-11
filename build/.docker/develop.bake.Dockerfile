@@ -4,11 +4,7 @@
 # docker-bake.hcl files in the parent monorepos.
 #
 # REQUIRED CONTEXTS:
-# - server: builds from server repo
-# - core: builds from core repo
-# - web-apps: builds from web-apps repo
-# - sdkjs: builds from sdkjs repo
-# - example: builds from example repo
+# - docker: the final docker image of documentserver
 # ==============================================================================
 
 FROM finalubuntu AS develop

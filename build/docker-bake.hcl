@@ -17,7 +17,7 @@ variable "BUILD_ROOT" {
 }
 
 variable "PACKAGE_BASE" {
-  default = "finalubuntu"
+  default = "docsrv-build"
 }
 
 variable "NUGET_CACHE" {
@@ -125,16 +125,12 @@ target "example" {
   cache-to   = ["type=local,dest=/tmp/${REGISTRY}/example,mode=max"]
 }
 
-# ──────────────────────────────────────────────
-# BUILD TARGETS
-# ──────────────────────────────────────────────
-
-target "documentserver" {
+target "bundle" {
   inherits   = ["_common"]
   context    = ".."
-  dockerfile = "./build/.docker/docserver.bake.Dockerfile"
-  target     = "finalubuntu"
-  tags       = ["${REGISTRY}/documentserver:${TAG}"]
+  dockerfile = "./build/.docker/bundle.bake.Dockerfile"
+  target     = "bundle"
+  tags       = ["${REGISTRY}/bundle:${TAG}"]
   contexts = {
     core          = "target:core"
     server        = "target:server"
@@ -142,26 +138,8 @@ target "documentserver" {
     web-apps      = "target:web-apps"
     example       = "target:example"
   }
-  cache-from = ["type=local,src=/tmp/${REGISTRY}/documentserver"]
-  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/documentserver,mode=max"]
-}
-
-target "develop" {
-  inherits   = ["_common"]
-  context    = ".."
-  dockerfile = "./build/.docker/develop.bake.Dockerfile"
-  target     = "develop"
-  tags       = ["${REGISTRY}/documentserver:${TAG}-dev"]
-  contexts = {
-    finalubuntu    = "target:documentserver"
-    core           = "target:core"
-    server         = "target:server"
-    sdkjs          = "target:sdkjs"
-    web-apps       = "target:web-apps"
-    example        = "target:example"
-  }
-  cache-from = ["type=local,src=/tmp/${REGISTRY}/develop"]
-  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/develop,mode=max"]
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/bundle"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/bundle,mode=max"]
 }
 
 # ──────────────────────────────────────────────
@@ -175,16 +153,41 @@ target "packages" {
   target     = "packages"       # points to the FROM scratch stage
   tags       = ["${REGISTRY}/packages:${TAG}"]
   contexts = {
-    finalubuntu     = "target:documentserver"
-    core            = "target:core"
-    server          = "target:server"
-    sdkjs           = "target:sdkjs"
-    web-apps        = "target:web-apps"
-    example         = "target:example"
+    bundle          = "target:bundle"
   }
 
   # Export the filesystem directly to a local directory instead of an image
   output = ["type=local,dest=./deploy/packages"]
 
   cache-from = ["type=local,src=/tmp/${REGISTRY}/packages"]  # reuses builder cache
+}
+
+# ──────────────────────────────────────────────
+# BUILD TARGETS
+# ──────────────────────────────────────────────
+
+target "docker" {
+  inherits   = ["_common"]
+  context    = ".."
+  dockerfile = "./build/.docker/docker.bake.Dockerfile"
+  target     = "finalubuntu"
+  tags       = ["${REGISTRY}/documentserver:${TAG}"]
+  contexts = {
+    packages = "target:packages"
+  }
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/documentserver"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/documentserver,mode=max"]
+}
+
+target "develop" {
+  inherits   = ["_common"]
+  context    = ".."
+  dockerfile = "./build/.docker/develop.bake.Dockerfile"
+  target     = "develop"
+  tags       = ["${REGISTRY}/documentserver:${TAG}-dev"]
+  contexts = {
+    finalubuntu    = "target:docker"
+  }
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/develop"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/develop,mode=max"]
 }
