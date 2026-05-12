@@ -13,7 +13,7 @@ FROM finalubuntu AS develop
 
     RUN apt-get update && \
         curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && \
-        apt-get install -y nodejs npm openjdk-21-jdk wget zip brotli && \
+        apt-get install -y nodejs openjdk-21-jdk wget zip brotli && \
         npm install -g @yao-pkg/pkg grunt-cli && \
         rm -rf /var/lib/apt/lists/*
 
