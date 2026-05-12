@@ -82,8 +82,29 @@ next:
 	@$(MAKE) --no-print-directory print-nc-version
 	@docker compose exec eo bash || true
 
+# Like `make next`, but injects the detected HOST_LAN_IP for Android emulator / LAN device testing.
+next-mobile:
+	@NC_BRANCH="$${NC_BRANCH:-master}" HOST_LAN_IP="$(DETECTED_HOST_LAN_IP)" $(MAKE) next
+
 pull:
 	docker compose pull && docker compose up -d && docker compose exec eo bash || true
+
+# Remove the Nextcloud data volume for the current NC_VERSION (default: latest).
+# Use this when you want a clean NC install, e.g. after a major version bump.
+#   make wipe-nc                  — wipes nc_data_latest
+#   make wipe-nc NC_VERSION=33    — wipes nc_data_33
+wipe-nc:
+	@docker compose stop nextcloud 2>/dev/null || true
+	@echo "Removing volume nc_data_$${NC_VERSION:-latest}..."
+	@docker volume rm nc_data_$${NC_VERSION:-latest} 2>/dev/null && echo "Done." || echo "Volume not found — nothing to remove."
+
+# Remove the Nextcloud data volume for the given NC_BRANCH (default: master).
+#   make wipe-next                      — wipes nc_data_master
+#   make wipe-next NC_BRANCH=stable33   — wipes nc_data_stable33
+wipe-next:
+	@docker compose stop nextcloud 2>/dev/null || true
+	@echo "Removing volume nc_data_$${NC_BRANCH:-master}..."
+	@docker volume rm nc_data_$${NC_BRANCH:-master} 2>/dev/null && echo "Done." || echo "Volume not found — nothing to remove."
 
 build:
 	(cd ../build && docker buildx bake develop) && \
