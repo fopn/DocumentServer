@@ -28,19 +28,26 @@ The docker compose environment in this directory allows to run document server b
         - Docs address `http://localhost:8080/`
         - Server address for internal requests from Euro-Office Docs `http://nextcloud/`
         - Docs address for internal requests from Nextcloud `http://eo/`
-        - Secret key: `secret`
+        - Secret key: `euro-office-dev-jwt-secret-key-2026`
     - Navigate to Files `http://localhost:8081/apps/files/`, create a document, and try to open it
 
 #### Testing from mobile devices and emulators
 
-`make local` runs on `localhost` — enough for the desktop browser and iOS simulator. For Android emulators and physical devices on the LAN, use `make mobile` instead — it detects the host's LAN IP and injects it so the editor is reachable from off-desktop clients.
+`make local` runs on `localhost` — enough for the desktop browser and iOS simulator. For Android emulators and physical devices on the LAN, use `make mobile` instead — it detects the host's LAN IP, injects it so the editor is reachable from off-desktop clients, and prints the full Nextcloud URL in the banner.
+
+For testing against a `make next` branch from a mobile device, use `make next-mobile` (accepts the same `NC_BRANCH` variable):
+
+```sh
+make next-mobile                        # mobile + NC master
+make next-mobile NC_BRANCH=stable34     # mobile + NC34 stable
+```
 
 | Client | Target | Nextcloud URL |
 |---|---|---|
 | Desktop browser | `make local` or `make mobile` | `http://localhost:8081/` |
 | iOS simulator | `make local` or `make mobile` | `http://localhost:8081/` |
-| Android emulator | `make mobile` | `http://10.0.2.2:8081/` |
-| Physical LAN device | `make mobile` | `http://<HOST_LAN_IP>:8081/` |
+| Android emulator | `make mobile` / `make next-mobile` | `http://10.0.2.2:8081/` |
+| Physical LAN device | `make mobile` / `make next-mobile` | `http://<HOST_LAN_IP>:8081/` |
 
 IP detection uses `ipconfig` on macOS and `ip route` on Linux. On native Windows — or any machine where detection fails — pass it explicitly:
 
@@ -54,11 +61,31 @@ When your LAN IP changes (new wifi, tethering, etc.), update the running stack w
 make refresh-urls
 ```
 
-Switching between `make local` and `make mobile` on a running stack is supported — both targets re-apply the correct URLs and trusted domains on each run.
+Switching between `make local` and `make mobile` (or `make next` and `make next-mobile`) on a running stack is supported — both targets re-apply the correct URLs and trusted domains on each run.
+
+#### Pinning the Nextcloud version
+
+`make local` follows `nextcloud:latest` from Docker Hub (current stable) and persists data in a named volume `nc_data_latest`. If `latest` advances to a newer NC major version, the NC entrypoint auto-runs `occ upgrade` on next start — no manual steps needed.
+
+To pin to a specific version, pass `NC_VERSION`:
+
+```sh
+NC_VERSION=33 make local    # pin to NC33, data in nc_data_33
+NC_VERSION=34 make local    # pin to NC34, data in nc_data_34
+```
+
+Each `NC_VERSION` gets its own named volume, so switching between pinned versions preserves each one's state.
+
+> Note: if your local `nextcloud:latest` image is behind the data volume (e.g. you pulled latest when it was NC33 but now the volume has NC34 data), `make` will detect this and print a pull command. This can happen if `docker pull nextcloud:latest` was not run after a major NC release.
+
+To wipe the data for the current version and start fresh:
+
+```sh
+make wipe-nc                  # wipes nc_data_latest
+make wipe-nc NC_VERSION=33    # wipes nc_data_33
+```
 
 #### Testing against a future Nextcloud version
-
-`make local` follows `nextcloud:latest` from Docker Hub — current stable.
 
 Use `make next` when you specifically need to test against an unreleased or non-current NC: `master`, `stable33`, `stable34`, etc.
 
@@ -72,7 +99,14 @@ make next NC_BRANCH=stable34        # NC34 stable (once cut)
 
 `make next` swaps the official image for the source-clone dev image (`nextcloud-docker-dev`) via `docker-compose.next.yml`, and gives each NC branch its own named volume — switching between branches preserves each branch's installed state (eurooffice config, files, sessions). Compose detects the volume mount change and recreates the container automatically; no manual stop/rm.
 
-First boot per branch will be several minutes while NC clones and installs into the empty volume; subsequent switches reattach to the warm volume in seconds. Wipe a single branch with `docker volume rm nc_data_<branch>`.
+First boot per branch will be several minutes while NC clones and installs into the empty volume; subsequent switches reattach to the warm volume in seconds. During a long first boot the banner shows a live log line after 1000s so you can confirm progress is still happening.
+
+Wipe a single branch with:
+
+```sh
+make wipe-next                        # wipes nc_data_master
+make wipe-next NC_BRANCH=stable33     # wipes nc_data_stable33
+```
 
 > Note: tracking `master` means NC's code moves between sessions. If you see `Nextcloud or one of the apps require upgrade` in `make next` output, run `docker compose exec -u www-data nextcloud ./occ upgrade` (or wipe the volume and then run `make next`).
 
