@@ -97,7 +97,7 @@
 		}
 		this.showSmartPicker = true
 
-		const openAssistantForm = window.OCA && window.OCA.Assistant && window.OCA.Assistant.openAssistantForm
+		const openAssistantForm = window.OCA?.Assistant?.openAssistantForm
 		try {
 			if (typeof openAssistantForm !== 'function') {
 				console.debug('NC Assistant app is not loaded; smart picker is unavailable')
@@ -229,7 +229,7 @@
 			OCA.Eurooffice.onRequestInsertImage(event.data.param)
 			break
 		case 'editorRequestSmartPicker':
-			OCA.Eurooffice.onSmartPickerRequest(event.data.param && event.data.param.selectedText)
+			OCA.Eurooffice.onSmartPickerRequest(event.data.param?.selectedText)
 			break
 		case 'editorRequestMailMergeRecipients':
 			OCA.Eurooffice.onRequestMailMergeRecipients(event.data.param)

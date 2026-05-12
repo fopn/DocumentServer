@@ -146,14 +146,11 @@ import axios from '@nextcloud/axios'
 								OCA.Eurooffice.docEditor.showMessage(t(OCA.Eurooffice.AppName, 'You are using public demo Nextcloud Office server. Please do not store private sensitive data.'))
 							}
 							// Tell the editor whether the NC Assistant app is enabled.
-							// onAppReady can fire before assistant-main.mjs has finished
-							// initializing window.OCA.Assistant, so don't rely on that
-							// runtime presence — read the capability NC publishes
-							// synchronously instead. The actual openAssistantForm call
-							// happens only when the user clicks the menu entry, by which
-							// time the module has loaded.
-							const caps = (typeof OC === 'object' && OC.getCapabilities && OC.getCapabilities()) || {}
-							const assistantAvailable = !!(caps.assistant && caps.assistant.enabled)
+							// The EditorController publishes this via initial state under
+							// the 'eurooffice' namespace so it works on every editor layout
+							// (including the inframe 'base' layout that doesn't run the
+							// Assistant app's own initial-state bootstrap).
+							const assistantAvailable = !!OCP?.InitialState?.loadState?.('eurooffice', 'assistant-enabled', false)
 							if (typeof OCA.Eurooffice.docEditor.setAssistantAvailable === 'function') {
 								OCA.Eurooffice.docEditor.setAssistantAvailable(assistantAvailable)
 							}
@@ -401,7 +398,7 @@ import axios from '@nextcloud/axios'
 		// The web-apps Gateway delivers the user's current selection via
 		// event.data.selectedText so the NC Assistant can seed its input
 		// with the text the user wants to operate on.
-		const selectedText = event && event.data && event.data.selectedText ? event.data.selectedText : ''
+		const selectedText = event?.data?.selectedText ?? ''
 		window.parent.postMessage({
 			method: 'editorRequestSmartPicker',
 			param: { selectedText },

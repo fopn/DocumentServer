@@ -38,6 +38,7 @@ use OCA\Eurooffice\FileUtility;
 use OCA\Eurooffice\FileVersions;
 use OCA\Eurooffice\KeyManager;
 use OCA\Eurooffice\TemplateManager;
+use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\DataDownloadResponse;
@@ -48,6 +49,7 @@ use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\PublicPage;
 use OCP\AppFramework\Http\Template\PublicTemplateResponse;
 use OCP\AppFramework\Http\TemplateResponse;
+use OCP\AppFramework\Services\IInitialState;
 use OCP\Constants;
 use OCP\Files\File;
 use OCP\Files\IRootFolder;
@@ -89,7 +91,9 @@ class EditorController extends Controller {
         private readonly DocumentService $documentService,
         private readonly KeyManager $keyManager,
         private readonly ?IVersionManager $versionManager,
-        private readonly ?FolderManager $folderManager
+        private readonly ?FolderManager $folderManager,
+        private readonly IInitialState $initialState,
+        private readonly IAppManager $appManager,
     ) {
         parent::__construct($appName, $request);
     }
@@ -1347,6 +1351,11 @@ class EditorController extends Controller {
                 $response->setHeaderTitle($file->getName());
             }
         }
+
+        $this->initialState->provideInitialState(
+            'assistant-enabled',
+            $this->appManager->isEnabledForUser('assistant')
+        );
 
         \OCP\Util::addHeader("meta", ["name" => "apple-touch-fullscreen", "content" => "yes"]);
 
