@@ -48,8 +48,8 @@ RUN apt-get -y update && \
 
 
 # --- Final setup ---
-COPY build/configs/supervisor/ /etc/supervisor/conf.d/
-COPY --chmod=755 build/scripts/entrypoint.sh /entrypoint.sh
+COPY build/standalone/configs/supervisor/ /etc/supervisor/conf.d/
+COPY --chmod=755 build/standalone/scripts/entrypoint.sh /entrypoint.sh
 
 #RUN mkdir -p ${EO_LOG}/docservice ${EO_LOG}/converter \
 #             ${EO_LOG}/adminpanel ${EO_LOG}/metrics

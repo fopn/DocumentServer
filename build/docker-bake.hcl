@@ -41,7 +41,7 @@ variable "CACHE_BUST" {
 # ──────────────────────────────────────────────
 
 group "default" {
-  targets = ["docker"]
+  targets = ["standalone"]
 }
 
 group "develop" {
@@ -166,10 +166,23 @@ target "packages" {
 # BUILD TARGETS
 # ──────────────────────────────────────────────
 
-target "docker" {
+target "orchestrated" {
   inherits   = ["_common"]
   context    = ".."
-  dockerfile = "./build/.docker/docker.bake.Dockerfile"
+  dockerfile = "./build/.docker/orchestrated.bake.Dockerfile"
+  target     = "docs"
+  tags       = ["${REGISTRY}/docs:${TAG}"]
+  contexts = {
+    packages = "target:packages"
+  }
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/docs"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/docs,mode=max"]
+}
+
+target "standalone" {
+  inherits   = ["_common"]
+  context    = ".."
+  dockerfile = "./build/.docker/standalone.bake.Dockerfile"
   target     = "finalubuntu"
   tags       = ["${REGISTRY}/documentserver:${TAG}"]
   contexts = {
@@ -186,7 +199,7 @@ target "develop" {
   target     = "develop"
   tags       = ["${REGISTRY}/documentserver:${TAG}-dev"]
   contexts = {
-    finalubuntu    = "target:docker"
+    finalubuntu    = "target:standalone"
   }
   cache-from = ["type=local,src=/tmp/${REGISTRY}/develop"]
   cache-to   = ["type=local,dest=/tmp/${REGISTRY}/develop,mode=max"]
