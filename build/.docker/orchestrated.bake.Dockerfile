@@ -243,3 +243,103 @@ FROM ds-base AS docs
     #   args: [...]
     # --------------------------------------------------------------------
     CMD ["docservice"]
+
+
+FROM node:20-alpine3.19 AS example
+    LABEL maintainer Euro-Office
+
+    ENV LANG=en_US.UTF-8 \
+        LANGUAGE=en_US:en \
+        LC_ALL=en_US.UTF-8 \
+        NODE_ENV=production-linux \
+        NODE_CONFIG_DIR=/etc/euro-office/documentserver-example/
+
+    WORKDIR /var/www/euro-office/documentserver-example/
+
+    RUN apk update && \
+        apk add git && \
+        git clone \
+        --depth 1 \
+        --recurse-submodules \
+        https://github.com/Euro-Office/document-server-integration.git && \
+        mkdir -p /var/www/euro-office/documentserver-example && \
+        cp -r ./document-server-integration/web/documentserver-example/nodejs/. \
+        /var/www/euro-office/documentserver-example/ && \
+        rm -rf ./document-server-integration && \
+        addgroup -S -g 1001 ds && \
+        adduser \
+        -S \
+        -G ds \
+        -D \
+        -h /var/www/euro-office/documentserver-example \
+        -s /sbin/nologin \
+        -u 1001 ds && \
+        chown -R ds:ds /var/www/euro-office/documentserver-example/ && \
+        mkdir -p /var/lib/euro-office/documentserver-example/ && \
+        chown -R ds:ds /var/lib/euro-office/ && \
+        mv files /var/lib/euro-office/documentserver-example/ && \
+        mkdir -p /etc/euro-office/documentserver-example/ && \
+        chown -R ds:ds /etc/euro-office/ && \
+        mv config/* /etc/euro-office/documentserver-example/ && \
+        npm install
+
+    EXPOSE 3000
+
+    USER ds
+
+    ENTRYPOINT ["/var/www/euro-office/documentserver-example/docker-entrypoint.sh", "npm", "start"]
+
+FROM python:3.11-bookworm AS builder
+    RUN pip install redis psycopg2  PyMySQL pika python-qpid-proton func_timeout requests kubernetes flask
+
+
+FROM python:3.11-slim-bookworm AS utils
+    ARG TARGETARCH
+    ARG DS_VERSION_HASH
+    ENV DS_VERSION_HASH=$DS_VERSION_HASH
+    COPY --from=ds-base /usr/local/bin/dumb-init /usr/local/bin/dumb-init
+    COPY --from=ds-base /opt/oracle/instantclient_23_7 /oracle/instantclient
+    COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
+    RUN apt update && \
+        apt-get install -y curl wget gnupg2 lsb-release jq xxd procps libaio1 unzip && \
+        echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list && \
+        wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+        curl -sSL https://packages.microsoft.com/keys/microsoft.asc | tee /etc/apt/trusted.gpg.d/microsoft.asc && \
+        echo "deb [arch=${TARGETARCH}] https://packages.microsoft.com/debian/$(lsb_release -rs)/prod $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/mssql.list && \
+        apt-get update && \
+        ACCEPT_EULA=Y apt install -y postgresql-client-17 default-mysql-client mssql-tools18 unixodbc-dev && \
+        curl -LO \
+        https://dl.k8s.io/release/`curl \
+        -L -s https://dl.k8s.io/release/stable.txt`/bin/linux/${TARGETARCH}/kubectl && \
+        chmod +x ./kubectl && \
+        mv ./kubectl /usr/local/bin/kubectl && \
+        mkdir /oracle/sqlplus /dameng /scripts && \
+        wget -O /oracle/sqlplus/sqlplus.zip https://download.oracle.com/otn_software/linux/instantclient/2370000/instantclient-sqlplus-linux.x64-23.7.0.25.01.zip && \
+        unzip -o /oracle/sqlplus/sqlplus.zip -d /oracle/sqlplus && \
+        mv /oracle/sqlplus/instantclient_23_7/* /oracle/instantclient/ && \
+        rm -rf /oracle/sqlplus && \
+        groupadd --system -g 1006 ds && \
+        useradd --system -g ds -d /home/ds -s /bin/bash -u 101 ds && \
+        chown -R ds:ds /scripts && \
+        chmod +x /usr/local/bin/dumb-init && \
+        rm -rf /var/lib/apt/lists/*
+    COPY build/scripts/orchestrated/sqlplus /usr/bin/sqlplus
+    COPY build/scripts/orchestrated/disql /usr/bin/disql
+    COPY --from=onlyoffice/damengdb:8.1.2 /opt/dmdbms/bin /dameng
+    USER ds
+
+FROM statsd/statsd AS metrics
+    ARG COMPANY_NAME=onlyoffice
+    COPY --from=ds-service /var/www/$COMPANY_NAME/documentserver/server/Metrics/config/config.js /usr/src/app/config.js
+
+FROM postgres:$POSTGRES_VERSION AS db
+    ARG COMPANY_NAME=onlyoffice
+    COPY --from=ds-service /var/www/$COMPANY_NAME/documentserver/server/schema/postgresql/createdb.sql /docker-entrypoint-initdb.d/
+
+FROM mysql:$MYSQL_VERSION AS mysqldb
+    ARG COMPANY_NAME=onlyoffice
+    COPY --chmod=777 --from=ds-service /var/www/$COMPANY_NAME/documentserver/server/schema/mysql/createdb.sql /docker-entrypoint-initdb.d/
+
+FROM mariadb:$MARIADB_VERSION AS db-mariadb
+    ARG COMPANY_NAME=onlyoffice
+    COPY --from=ds-service /var/www/$COMPANY_NAME/documentserver/server/schema/mysql/createdb.sql /docker-entrypoint-initdb.d/

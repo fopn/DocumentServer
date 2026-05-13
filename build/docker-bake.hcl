@@ -44,6 +44,10 @@ group "default" {
   targets = ["standalone"]
 }
 
+group "cluster" {
+  targets = ["cluster-utils", "cluster-example", "cluster-docs"]
+}
+
 group "develop" {
   targets = ["develop"]
 }
@@ -166,18 +170,43 @@ target "packages" {
 # BUILD TARGETS
 # ──────────────────────────────────────────────
 
-target "orchestrated" {
+### Orchestrated images
+
+target "cluster-docs" {
   inherits   = ["_common"]
   context    = ".."
   dockerfile = "./build/.docker/orchestrated.bake.Dockerfile"
   target     = "docs"
-  tags       = ["${REGISTRY}/docs:${TAG}"]
+  tags       = ["${REGISTRY}/cluster-docs:${TAG}"]
   contexts = {
     packages = "target:packages"
   }
   cache-from = ["type=local,src=/tmp/${REGISTRY}/docs"]
   cache-to   = ["type=local,dest=/tmp/${REGISTRY}/docs,mode=max"]
 }
+
+target "cluster-example" {
+  inherits   = ["_common"]
+  context    = ".."
+  dockerfile = "./build/.docker/orchestrated.bake.Dockerfile"
+  target     = "example"
+  tags       = ["${REGISTRY}/cluster-example:${TAG}"]
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/example"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/example,mode=max"]
+}
+
+target "cluster-utils" {
+  inherits   = ["_common"]
+  context    = ".."
+  dockerfile = "./build/.docker/orchestrated.bake.Dockerfile"
+  target     = "utils"
+  tags       = ["${REGISTRY}/cluster-utils:${TAG}"]
+  cache-from = ["type=local,src=/tmp/${REGISTRY}/utils"]
+  cache-to   = ["type=local,dest=/tmp/${REGISTRY}/utils,mode=max"]
+}
+
+
+### Standalone image
 
 target "standalone" {
   inherits   = ["_common"]
