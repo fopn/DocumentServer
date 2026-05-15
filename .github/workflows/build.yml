@@ -162,7 +162,7 @@ jobs:
           # Build the full graph; bake deduplicates shared layers automatically.
           # packages is included so its local filesystem export always runs,
           # enabling the release upload step below.
-          targets: develop,packages
+          targets: develop,packages,cluster-utils,cluster-example,cluster-docs
           # push=false here; per-target pushing is controlled via tags below.
           # Targets with empty tags= are not pushed regardless of this flag.
           push: false
