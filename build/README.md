@@ -2,6 +2,8 @@
 
 Docker image where we are experimenting with building the Euro-Office Document Server.
 
+Before starting, make sure Docker and your build user are set up: [Build Requisites](./BUILD_REQUISITES.md).
+
 ## Building the Image
 
 First, clone the repositories for the core-fonts, sdkjs, web-apps, and server components:

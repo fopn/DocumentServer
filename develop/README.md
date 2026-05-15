@@ -3,6 +3,8 @@
 
 The docker compose environment in this directory allows to run document server built from our code base. It runs a container called develop, which just adds the development (i.e., build) tooling to the finalubuntu container. This lets you build pieces on the fly directly inside the container, saving build time when developing:
 
+Before starting, make sure Docker and your build user are set up: [Build Requisites](../build/BUILD_REQUISITES.md).
+
 - Clone the Euro-Office Nextcloud connector as a sibling of `DocumentServer` (i.e. inside the same `euro-office-public` parent):
   ```sh
   git clone https://github.com/Euro-Office/eurooffice-nextcloud.git ../../eurooffice-nextcloud
