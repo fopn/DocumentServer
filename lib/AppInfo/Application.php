@@ -32,9 +32,7 @@ use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\AppFramework\Http\Events\BeforeTemplateRenderedEvent as HttpBeforeTemplateRenderedEvent;
 use OCP\DirectEditing\RegisterDirectEditorEvent;
 use OCP\Files\Template\FileCreatedFromTemplateEvent;
-use OCP\Files\Template\ITemplateManager;
-use OCP\Files\Template\TemplateFileCreator;
-use OCP\IL10N;
+use OCP\Files\Template\RegisterTemplateCreatorEvent;
 use OCP\Security\CSP\AddContentSecurityPolicyEvent;
 use OCA\Files\Event\LoadAdditionalScriptsEvent;
 use OCA\Files_Sharing\Event\BeforeTemplateRenderedEvent;
@@ -46,6 +44,7 @@ use OCA\Eurooffice\Listeners\CreateFromTemplateListener;
 use OCA\Eurooffice\Listeners\FilesListener;
 use OCA\Eurooffice\Listeners\FileSharingListener;
 use OCA\Eurooffice\Listeners\DirectEditorListener;
+use OCA\Eurooffice\Listeners\RegisterTemplateCreatorListener;
 use OCA\Eurooffice\Listeners\ViewerListener;
 use OCA\Eurooffice\Listeners\WidgetListener;
 use OCA\Eurooffice\Events\DocumentUnsavedEvent;
@@ -95,6 +94,7 @@ class Application extends App implements IBootstrap {
         $context->registerEventListener(ShareDeletedEvent::class, ShareListener::class);
         $context->registerEventListener(UserDeletedEvent::class, UserListener::class);
         $context->registerEventListener(VersionRestoredEvent::class, FileVersionsListener::class);
+        $context->registerEventListener(RegisterTemplateCreatorEvent::class, RegisterTemplateCreatorListener::class);
 
         if (interface_exists(\OCP\Files\Template\ICustomTemplateProvider::class)) {
             $context->registerTemplateProvider(TemplateProvider::class);
@@ -108,36 +108,5 @@ class Application extends App implements IBootstrap {
     }
 
     public function boot(IBootContext $context): void {
-        if (class_exists(TemplateFileCreator::class)) {
-            $context->injectFn(function (ITemplateManager $templateManager, IL10N $trans, $appName): void {
-                if (!empty($this->appConfig->getDocumentServerUrl())
-                    && $this->appConfig->settingsAreSuccessful()
-                    && $this->appConfig->isUserAllowedToUse()) {
-                    $templateManager->registerTemplateFileCreator(function () use ($appName, $trans): TemplateFileCreator {
-                        $wordTemplate = new TemplateFileCreator($appName, $trans->t("New document"), ".docx");
-                        $wordTemplate->addMimetype("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-                        $wordTemplate->setIconSvgInline(file_get_contents(__DIR__ . '/../../img/new-docx.svg'));
-                        $wordTemplate->setRatio(21/29.7);
-                        return $wordTemplate;
-                    });
-
-                    $templateManager->registerTemplateFileCreator(function () use ($appName, $trans): TemplateFileCreator {
-                        $cellTemplate = new TemplateFileCreator($appName, $trans->t("New spreadsheet"), ".xlsx");
-                        $cellTemplate->addMimetype("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-                        $cellTemplate->setIconSvgInline(file_get_contents(__DIR__ . '/../../img/new-xlsx.svg'));
-                        $cellTemplate->setRatio(21/29.7);
-                        return $cellTemplate;
-                    });
-
-                    $templateManager->registerTemplateFileCreator(function () use ($appName, $trans): TemplateFileCreator {
-                        $slideTemplate = new TemplateFileCreator($appName, $trans->t("New presentation"), ".pptx");
-                        $slideTemplate->addMimetype("application/vnd.openxmlformats-officedocument.presentationml.presentation");
-                        $slideTemplate->setIconSvgInline(file_get_contents(__DIR__ . '/../../img/new-pptx.svg'));
-                        $slideTemplate->setRatio(16/9);
-                        return $slideTemplate;
-                    });
-                }
-            });
-        }
     }
 }
