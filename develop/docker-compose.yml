@@ -28,7 +28,7 @@ services:
     ports:
       - "8081:80"
     volumes:
-      - /var/www/html
+      - nc_data:/var/www/html
       - ./setup/enable-office.sh:/docker-entrypoint-hooks.d/post-installation/enable-office.sh:ro
       - ../../eurooffice-nextcloud:/var/www/html/custom_apps/eurooffice:ro
     environment:
@@ -48,4 +48,13 @@ services:
       ALLOW_PRIVATE_IP_ADDRESS: true
       USE_UNAUTHORIZED_STORAGE: true
       JWT_SECRET: ${EO_JWT_SECRET:-euro-office-dev-jwt-secret-key-2026}
+
+volumes:
+  nc_data:
+    # Per-version volume. NC_VERSION selects both the image tag and the volume,
+    # so each pinned version keeps its own state. Defaults to 'latest'.
+    # The NC entrypoint auto-runs occ upgrade when the image advances, so
+    # pulling a newer latest and restarting is safe — no manual upgrade needed.
+    # Wipe the current version's data with: make wipe-nc
+    name: nc_data_${NC_VERSION:-latest}
 

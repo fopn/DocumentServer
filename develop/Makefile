@@ -35,11 +35,23 @@ ifeq ($(HOST_LAN_IP),)
 	@echo "   For Android / physical device testing: make mobile"
 else
 	@echo "   Mode: mobile / LAN"
-	@echo "   Host LAN IP:   $(HOST_LAN_IP)"
+	@echo "   Nextcloud:     http://$(HOST_LAN_IP):8081/"
 	@echo "   On IP change:  make refresh-urls"
 endif
+	@echo "   Volume:    nc_data_$${NC_VERSION:-latest}  (wipe with: make wipe-nc NC_VERSION=$${NC_VERSION:-latest})"
 	@echo ""
 	docker compose up -d
+	@if [ "$$(docker inspect --format '{{.State.Status}}' nextcloud 2>/dev/null)" != "running" ]; then \
+	  if docker compose logs nextcloud 2>&1 | grep -q "version of the data"; then \
+	    echo ""; \
+	    echo "   WARNING: Nextcloud failed to start — your local nextcloud:$${NC_VERSION:-latest} image is"; \
+	    echo "   behind the data volume. Pull the latest image and retry:"; \
+	    echo ""; \
+	    echo "      docker pull nextcloud:$${NC_VERSION:-latest} && make"; \
+	    echo ""; \
+	    exit 1; \
+	  fi; \
+	fi
 	@$(MAKE) --no-print-directory refresh-urls
 	@$(MAKE) --no-print-directory print-nc-version
 	@docker compose exec eo bash || true
@@ -71,8 +83,29 @@ next:
 	@$(MAKE) --no-print-directory print-nc-version
 	@docker compose exec eo bash || true
 
+# Like `make next`, but injects the detected HOST_LAN_IP for Android emulator / LAN device testing.
+next-mobile:
+	@NC_BRANCH="$${NC_BRANCH:-master}" HOST_LAN_IP="$(DETECTED_HOST_LAN_IP)" $(MAKE) next
+
 pull:
 	docker compose pull && docker compose up -d && docker compose exec eo bash || true
+
+# Remove the Nextcloud data volume for the current NC_VERSION (default: latest).
+# Use this when you want a clean NC install, e.g. after a major version bump.
+#   make wipe-nc                  — wipes nc_data_latest
+#   make wipe-nc NC_VERSION=33    — wipes nc_data_33
+wipe-nc:
+	@docker compose stop nextcloud 2>/dev/null || true
+	@echo "Removing volume nc_data_$${NC_VERSION:-latest}..."
+	@docker volume rm nc_data_$${NC_VERSION:-latest} 2>/dev/null && echo "Done." || echo "Volume not found — nothing to remove."
+
+# Remove the Nextcloud data volume for the given NC_BRANCH (default: master).
+#   make wipe-next                      — wipes nc_data_master
+#   make wipe-next NC_BRANCH=stable33   — wipes nc_data_stable33
+wipe-next:
+	@docker compose stop nextcloud 2>/dev/null || true
+	@echo "Removing volume nc_data_$${NC_BRANCH:-master}..."
+	@docker volume rm nc_data_$${NC_BRANCH:-master} 2>/dev/null && echo "Done." || echo "Volume not found — nothing to remove."
 
 build:
 	(cd ../build && docker buildx bake develop) && \
@@ -86,13 +119,27 @@ build:
 refresh-urls:
 	@start=$$(date +%s); \
 	  while ! docker compose exec -T eo curl -sf http://localhost/healthcheck >/dev/null 2>&1; do \
+	    if [ "$$(docker inspect --format '{{.State.Status}}' eo 2>/dev/null)" != "running" ]; then \
+	      printf "\r[eo]        failed — check: docker compose logs eo\n"; \
+	      exit 1; \
+	    fi; \
 	    printf "\r[eo]        waiting     (%ds)   " $$(($$(date +%s) - start)); \
 	    sleep 2; \
 	  done; \
 	  printf "\r[eo]        ready        (%ds)        \n" $$(($$(date +%s) - start))
 	@start=$$(date +%s); \
 	  while ! docker compose exec -T -u www-data nextcloud ./occ config:app:get eurooffice DocumentServerUrl 2>/dev/null | grep -q "http"; do \
-	    printf "\r[nextcloud] installing  (%ds)   " $$(($$(date +%s) - start)); \
+	    if [ "$$(docker inspect --format '{{.State.Status}}' nextcloud 2>/dev/null)" != "running" ]; then \
+	      printf "\r[nextcloud] failed — check: docker compose logs nextcloud\n"; \
+	      exit 1; \
+	    fi; \
+	    elapsed=$$(($$(date +%s) - start)); \
+	    if [ $$elapsed -ge 1000 ]; then \
+	      last=$$(docker compose logs --tail=1 nextcloud 2>/dev/null | tr -d '\r'); \
+	      printf "\r[nextcloud] still installing (%ds) — %s   " $$elapsed "$$last"; \
+	    else \
+	      printf "\r[nextcloud] installing  (%ds)   " $$elapsed; \
+	    fi; \
 	    sleep 2; \
 	  done; \
 	  printf "\r[nextcloud] ready        (%ds)        \n" $$(($$(date +%s) - start))
