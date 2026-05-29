@@ -106,6 +106,11 @@ target "_common" {
 # DEPENDENCY TARGETS
 # ──────────────────────────────────────────────
 
+target "brand-icons" {
+  dockerfile-inline = "FROM scratch\nWORKDIR /keep"
+}
+
+
 target "core" {
   inherits   = ["_common"]
   context    = ".."
@@ -154,6 +159,9 @@ target "server" {
   tags       = ["${REGISTRY}/server:${TAG}"]
   cache-from = ["type=local,src=/tmp/${REGISTRY}/server"]
   cache-to   = ["type=local,dest=/tmp/${REGISTRY}/server,mode=max"]
+  contexts = {
+    brand-icons    = "target:brand-icons"
+  }
 }
 
 target "example" {
@@ -163,6 +171,9 @@ target "example" {
   tags       = ["${REGISTRY}/example:${TAG}"]
   cache-from = ["type=local,src=/tmp/${REGISTRY}/example"]
   cache-to   = ["type=local,dest=/tmp/${REGISTRY}/example,mode=max"]
+  contexts = {
+    brand-icons    = "target:brand-icons"
+  }
 }
 
 target "bundle" {
@@ -194,6 +205,7 @@ target "packages" {
   tags       = ["${REGISTRY}/packages:${TAG}"]
   contexts = {
     bundle          = "target:bundle"
+    brand-icons     = "target:brand-icons"
   }
 
   # Export the filesystem directly to a local directory instead of an image
