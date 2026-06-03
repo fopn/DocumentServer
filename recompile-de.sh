@@ -1,0 +1,14 @@
+#!/bin/bash
+# Recompile DocumentEditor app.js without full build (no clean, no postload)
+set -e
+cd /develop/web-apps/build
+BUILD_ROOT=$EO_ROOT grunt --gruntfile Gruntfile.js init-build-documenteditor main-app-init requirejs:compile
+# Patch the version placeholder that replace:writeVersion would normally handle
+VER="${PRODUCT_VERSION:-9.2.1}.$(python3 -c "import json; d=json.load(open('/develop/web-apps/build/documenteditor.json')); print(d['build'])")"
+sed -i "s/{{PRODUCT_VERSION}}/$VER/g" "$EO_ROOT/web-apps/apps/documenteditor/main/app.js"
+echo "Version patched: $VER"
+# Update nginx cache tag
+NEW_TAG=$(md5sum "$EO_ROOT/web-apps/apps/documenteditor/main/app.js" | cut -c1-32)
+sed -i "s/set \ \"[^\"]*\";/set \ \"$NEW_TAG\";/" /etc/nginx/includes/ds-cache.conf
+nginx -s reload
+echo "Cache tag updated: $NEW_TAG — done."

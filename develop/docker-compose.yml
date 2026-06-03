@@ -22,6 +22,7 @@ services:
     volumes:
       - ../:/develop # mounts deployed files to application
       - ./setup/Makefile:/Makefile # mounts deployed files to application
+      - ./ds-docservice.conf:/etc/nginx/includes/ds-docservice.conf:ro
   nextcloud:
     image: nextcloud:${NC_VERSION:-latest}
     container_name: nextcloud
