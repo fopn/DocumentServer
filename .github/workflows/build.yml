@@ -198,9 +198,10 @@ jobs:
             echo "develop_push=false" >> $GITHUB_OUTPUT
           fi
 
-          # e2e image export: on pull_request builds nothing is pushed to the
-          # registry, so export the amd64 euro-office standalone image as a
-          # loadable tar that the e2e job downloads and `docker load`s. Other
+          # e2e image: pull_request builds don't push the release tags, so push
+          # the amd64 euro-office standalone image under a throwaway pr-<n> tag
+          # that the e2e job pulls. Layer dedup keeps the transfer small, and a
+          # cleanup workflow deletes the tag when the PR closes. Other
           # arches/brands stay cacheonly.
           if [[ "${{ github.event_name }}" == "pull_request" \
                 && "${{ matrix.brand.name }}" == "euro-office" \
@@ -209,7 +210,7 @@ jobs:
           else
             echo "export_image=false" >> $GITHUB_OUTPUT
           fi
-          echo "e2e_image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
+          echo "e2e_image=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
 
           # Parse PRODUCT_VERSION / BUILD_NUMBER from tag of the form v${PRODUCT_VERSION}-${BUILD_NUMBER}
           # (e.g. v9.3.1-beta.1, v9.3.1-stable.1). Fall back to env defaults otherwise.
@@ -276,7 +277,7 @@ jobs:
             standalone.cache-from=type=registry,ref=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:${{ steps.meta.outputs.ref_name }}-${{ matrix.brand.cache_prefix }}standalone-buildcache-${{ matrix.arch }}
             standalone.cache-to=type=registry,ref=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:${{ steps.meta.outputs.ref_name }}-${{ matrix.brand.cache_prefix }}standalone-buildcache-${{ matrix.arch }},mode=max
             standalone.tags=${{ steps.meta.outputs.images_push == 'true' && format('{0}/{1}:{2}', env.REGISTRY, matrix.brand.image_name, steps.meta.outputs.images_tag) || (steps.meta.outputs.export_image == 'true' && steps.meta.outputs.e2e_image || '') }}
-            standalone.output=${{ steps.meta.outputs.images_push == 'true' && 'type=registry' || (steps.meta.outputs.export_image == 'true' && 'type=docker,dest=/tmp/e2e-image.tar' || 'type=cacheonly') }}
+            standalone.output=${{ (steps.meta.outputs.images_push == 'true' || steps.meta.outputs.export_image == 'true') && 'type=registry' || 'type=cacheonly' }}
             develop.cache-from=type=registry,ref=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:${{ steps.meta.outputs.ref_name }}-${{ matrix.brand.cache_prefix }}develop-buildcache-${{ matrix.arch }}
             develop.cache-to=type=registry,ref=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:${{ steps.meta.outputs.ref_name }}-${{ matrix.brand.cache_prefix }}develop-buildcache-${{ matrix.arch }},mode=max
             develop.tags=${{ steps.meta.outputs.develop_push == 'true' && format('{0}/{1}:latest-dev-{2}', env.REGISTRY, matrix.brand.image_name, matrix.arch) || '' }}
@@ -288,14 +289,6 @@ jobs:
           BUILD_NUMBER: ${{ steps.meta.outputs.build_number }}
           BUILD_ROOT: ${{ env.BUILD_ROOT }}
           NUGET_CACHE: local
-
-      - name: Upload e2e image tar
-        if: steps.meta.outputs.export_image == 'true'
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-image
-          path: /tmp/e2e-image.tar
-          retention-days: 1
 
       - name: Upload packages to GitHub Release
         uses: softprops/action-gh-release@v2
@@ -430,38 +423,22 @@ jobs:
         id: image
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-            echo "source=artifact" >> $GITHUB_OUTPUT
+            echo "ref=${{ env.REGISTRY }}/${{ env.CACHE_IMAGE_NAME }}:pr-${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
           elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
             echo "ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest" >> $GITHUB_OUTPUT
-            echo "source=registry" >> $GITHUB_OUTPUT
           else
             echo "ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:nightly" >> $GITHUB_OUTPUT
-            echo "source=registry" >> $GITHUB_OUTPUT
           fi
 
       - name: Log in to GitHub Container Registry
-        if: steps.image.outputs.source == 'registry'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Download e2e image artifact
-        if: steps.image.outputs.source == 'artifact'
-        uses: actions/download-artifact@v4
-        with:
-          name: e2e-image
-          path: /tmp/e2e-image
-
-      - name: Load or pull built image
-        run: |
-          if [[ "${{ steps.image.outputs.source }}" == "artifact" ]]; then
-            docker load -i /tmp/e2e-image/e2e-image.tar
-          else
-            docker pull ${{ steps.image.outputs.ref }}
-          fi
+      - name: Pull built image
+        run: docker pull ${{ steps.image.outputs.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4

@@ -1,0 +1,38 @@
+name: Cleanup e2e PR image
+
+# When a PR closes, delete the throwaway documentserver:pr-<n> image that the
+# build workflow pushed for the e2e job, so per-PR tags don't accumulate in
+# ghcr. Separate from build.yml so closing a PR doesn't trigger a build.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  packages: write
+
+env:
+  ORG: euro-office
+  PACKAGE: documentserver-build-cache
+
+jobs:
+  delete-pr-image:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete pr-<n> image version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: pr-${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          ids=$(gh api --paginate \
+            "/orgs/${ORG}/packages/container/${PACKAGE}/versions" \
+            --jq ".[] | select(.metadata.container.tags[]? == \"${TAG}\") | .id")
+          if [[ -z "$ids" ]]; then
+            echo "No image version tagged ${TAG}; nothing to delete."
+            exit 0
+          fi
+          for id in $ids; do
+            echo "Deleting ${PACKAGE} version $id (tag ${TAG})"
+            gh api -X DELETE \
+              "/orgs/${ORG}/packages/container/${PACKAGE}/versions/${id}"
+          done
