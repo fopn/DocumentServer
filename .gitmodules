@@ -3,8 +3,8 @@
 	url = https://github.com/Euro-Office/server.git
 [submodule "web-apps"]
 	path = web-apps
-	url = https://github.com/ryanmathew404/EuroOffice-Test.git
-	branch = web-apps
+	url = https://github.com/ryanmathew404/web-apps.git
+	branch = feat/owner-permissions
 [submodule "sdkjs"]
 	path = sdkjs
 	url = https://github.com/Euro-Office/sdkjs.git
