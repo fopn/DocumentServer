@@ -1,6 +1,5 @@
 import { spawnSync } from 'child_process';
-
-const CONTAINER_NAME = 'euro-office-e2e';
+import { CONTAINER_NAME } from './constants';
 
 export default async function globalTeardown(): Promise<void> {
   if (process.env.E2E_DOCKER_MANAGED !== 'true') {

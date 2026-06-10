@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { DEFAULT_BASE_URL } from './constants';
 
 export default defineConfig({
   testDir: './tests',
@@ -10,7 +11,7 @@ export default defineConfig({
   globalSetup: require.resolve('./global-setup'),
   globalTeardown: require.resolve('./global-teardown'),
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:8988',
+    baseURL: process.env.E2E_BASE_URL ?? DEFAULT_BASE_URL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',

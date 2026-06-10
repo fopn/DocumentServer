@@ -1,19 +1,21 @@
 import { spawnSync } from 'child_process';
+import { CONTAINER_NAME, HOST_PORT } from './constants';
 
-const CONTAINER_NAME = 'euro-office-e2e';
-const HOST_PORT = 8988;
 const IMAGE = process.env.E2E_IMAGE ?? 'euro-office/documentserver:latest';
 const TIMEOUT_MS = 5 * 60 * 1000;
 const POLL_INTERVAL_MS = 3000;
 
-async function waitForHealthcheck(url: string, timeoutMs: number): Promise<void> {
+async function pollUntil(
+  label: string,
+  url: string,
+  isReady: (res: Response) => Promise<boolean>,
+  timeoutMs: number,
+): Promise<void> {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     try {
-      const res = await fetch(url);
-      const text = await res.text();
-      if (text.trim() === 'true') {
-        console.log('[global-setup] healthcheck passed');
+      if (await isReady(await fetch(url))) {
+        console.log(`[global-setup] ${label} passed`);
         return;
       }
     } catch {
@@ -21,7 +23,7 @@ async function waitForHealthcheck(url: string, timeoutMs: number): Promise<void>
     }
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
   }
-  throw new Error(`[global-setup] Timed out after ${timeoutMs / 1000}s waiting for healthcheck at ${url}`);
+  throw new Error(`[global-setup] Timed out after ${timeoutMs / 1000}s waiting for ${label} at ${url}`);
 }
 
 export default async function globalSetup(): Promise<void> {
@@ -52,5 +54,19 @@ export default async function globalSetup(): Promise<void> {
   console.log(`[global-setup] Container ID: ${result.stdout.trim().slice(0, 12)}`);
   console.log(`[global-setup] Waiting for healthcheck (up to ${TIMEOUT_MS / 1000}s)...`);
 
-  await waitForHealthcheck(`${process.env.E2E_BASE_URL}/healthcheck`, TIMEOUT_MS);
+  // /healthcheck reflects docservice readiness only. The example app is a
+  // separate supervised process, so also wait for /example/ to stop 502ing
+  // before the first test navigates there.
+  await pollUntil(
+    'healthcheck',
+    `${process.env.E2E_BASE_URL}/healthcheck`,
+    async res => (await res.text()).trim() === 'true',
+    TIMEOUT_MS,
+  );
+  await pollUntil(
+    'example app',
+    `${process.env.E2E_BASE_URL}/example/`,
+    async res => res.ok,
+    TIMEOUT_MS,
+  );
 }
