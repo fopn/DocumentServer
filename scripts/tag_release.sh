@@ -108,16 +108,18 @@ tag_repo() {
     local repo_path="$1"
     local repo_name="$2"
     local tag="$3"
+
     if git -C "$repo_path" rev-parse "$tag" >/dev/null 2>&1; then
         echo "  SKIP $repo_name — tag $tag already exists"
-        return 0
-    fi
-    if [ "$DRY_RUN" -eq 1 ]; then
-        echo "  [DRY RUN] Would tag $repo_name at $(git -C "$repo_path" rev-parse --short HEAD) as $tag"
     else
-        git -C "$repo_path" tag -a "$tag" -m "Release $tag"
-        echo "  Tagged $repo_name at $(git -C "$repo_path" rev-parse --short HEAD) as $tag"
+        if [ "$DRY_RUN" -eq 1 ]; then
+            echo "  [DRY RUN] Would tag $repo_name at $(git -C "$repo_path" rev-parse --short HEAD) as $tag"
+        else
+            git -C "$repo_path" tag -a "$tag" -m "Release $tag"
+            echo "  Tagged $repo_name at $(git -C "$repo_path" rev-parse --short HEAD) as $tag"
+        fi
     fi
+
     if [ "$PUSH" -eq 1 ] && [ "$DRY_RUN" -eq 0 ]; then
         git -C "$repo_path" push origin "$tag"
         echo "  Pushed $tag for $repo_name"
