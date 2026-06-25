@@ -109,7 +109,7 @@ target "_common" {
 target "brand-icons" {
   ## dummy image that contains no brand,
   ## so default brand is applied implicitly.
-  ## needs workdir as scratch is otherwise 
+  ## needs workdir as scratch is otherwise
   ## non-existent
   dockerfile-inline = "FROM scratch\nWORKDIR /keep"
 }
@@ -279,6 +279,7 @@ target "develop" {
   dockerfile = "./build/.docker/develop.bake.Dockerfile"
   target     = "develop"
   tags       = ["${REGISTRY}/documentserver:${TAG}-dev"]
+  output     = ["type=docker"]
   contexts = {
     finalubuntu    = "target:standalone"
   }
