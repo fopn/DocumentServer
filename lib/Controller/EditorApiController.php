@@ -501,6 +501,21 @@ class EditorApiController extends OCSController {
             ];
         }
 
+        // FileOpen: when a shared/restricted (non-owner) user opens a file that the
+        // owner has FileOpen-protected, flag it so the editor can greet them with a
+        // "this document is protected by FileOpen" notice on open.
+        if (!$isOwner) {
+            $foProtected = !$filePerms["allowEdit"] || !$filePerms["allowPrint"] || !$filePerms["allowDownload"];
+            if ($foProtected) {
+                $params["editorConfig"]["customization"]["foProtectedNotice"] = [
+                    "show"          => true,
+                    "allowEdit"     => (bool)$filePerms["allowEdit"],
+                    "allowPrint"    => (bool)$filePerms["allowPrint"],
+                    "allowDownload" => (bool)$filePerms["allowDownload"],
+                ];
+            }
+        }
+
         if ($inframe) {
             $params["_files_sharing"] = Server::get(\OCP\App\IAppManager::class)->isEnabledForAnyone("files_sharing");
         }
