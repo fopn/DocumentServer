@@ -4,7 +4,6 @@
 [submodule "web-apps"]
 	path = web-apps
 	url = https://github.com/fopn/web-apps.git
-	branch = dev
 [submodule "sdkjs"]
 	path = sdkjs
 	url = https://github.com/Euro-Office/sdkjs.git
