@@ -26,7 +26,7 @@ on:
         type: string
 
 env:
-  REGISTRY: ghcr.io/euro-office
+  REGISTRY: ghcr.io/fopn
   IMAGE_NAME: documentserver
   CLUSTER_IMG_DOCS: cluster-docs
   CLUSTER_IMG_EXAMPLE: cluster-example
@@ -35,29 +35,17 @@ env:
   PRODUCT_VERSION: 9.3.1
   BUILD_NUMBER: dev.1
   BUILD_ROOT: /package
-  # Branded image names (nextcloud-office)
-  NEXTCLOUD_IMAGE_NAME: nextcloud-office-documentserver
-  NEXTCLOUD_CLUSTER_IMG_DOCS: nextcloud-office-cluster-docs
-  NEXTCLOUD_CLUSTER_IMG_EXAMPLE: nextcloud-office-cluster-example
-  NEXTCLOUD_CLUSTER_IMG_UTILS: nextcloud-office-cluster-utils
 
 jobs:
   clone:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout fork repository (with submodules)
+      - name: Checkout repository (with submodules)
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           path: .
           submodules: recursive
-          token: ${{ secrets.EURO_OFFICE_MIRROR_TOKEN }}
-
-      - name: Checkout nextcloud-office-brand repo
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          repository: Euro-Office/nextcloud-office-brand
-          path: build/brands/nextcloud-office-brand
-          token: ${{ secrets.EURO_OFFICE_MIRROR_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Align submodules to requested branches
         shell: bash
@@ -108,7 +96,6 @@ jobs:
   #   docker   → pushed on default branch (:nightly) and git tags (:latest)
   #   develop  → pushed on default branch only (:latest-dev)
   #   packages → never pushed; exported to local filesystem for release upload
-  #              (euro-office → GitHub Release, nextcloud-office → SSH)
   # ─────────────────────────────────────────────────────────────
   build:
     runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-24.04-arm' || 'ubuntu-latest' }}
@@ -123,7 +110,7 @@ jobs:
           - amd64
           - arm64
         brand:
-          - name: euro-office
+          - name: default
             image_name: documentserver
             cluster_docs: cluster-docs
             cluster_example: cluster-example
@@ -131,14 +118,6 @@ jobs:
             extra_bake_files: ""
             extra_targets: ""
             cache_prefix: ""
-          - name: nextcloud-office
-            image_name: nextcloud-office-documentserver
-            cluster_docs: nextcloud-office-cluster-docs
-            cluster_example: nextcloud-office-cluster-example
-            cluster_utils: nextcloud-office-cluster-utils
-            extra_bake_files: "./brands/nextcloud-office-brand/brand-server.hcl"
-            extra_targets: "brand-icons,"
-            cache_prefix: "nextcloud-office-"
 
     steps:
       - name: Restore cache
@@ -185,14 +164,6 @@ jobs:
             echo "develop_push=false" >> $GITHUB_OUTPUT
           fi
 
-          # nextcloud-office images must not be pushed to ghcr.io/euro-office;
-          # only its .deb/.rpm packages are shipped (via SSH). Override the
-          # flags for that brand (last write to $GITHUB_OUTPUT wins).
-          if [[ "${{ matrix.brand.name }}" == "nextcloud-office" ]]; then
-            echo "images_push=false"  >> $GITHUB_OUTPUT
-            echo "develop_push=false" >> $GITHUB_OUTPUT
-          fi
-
           # Parse PRODUCT_VERSION / BUILD_NUMBER from tag of the form v${PRODUCT_VERSION}-${BUILD_NUMBER}
           # (e.g. v9.3.1-beta.1, v9.3.1-stable.1). Fall back to env defaults otherwise.
           if [[ "$IS_TAG" == "true" && "${{ github.ref_name }}" =~ ^v([^-]+)-(.+)$ ]]; then
@@ -207,13 +178,9 @@ jobs:
         uses: docker/bake-action@4a9a8d494466d37134e2bfca2d3a8de8fb2681ad # v5.13.0
         with:
           workdir: ./build
-          # For nextcloud-office, brand-server.hcl is appended; empty lines are
-          # filtered by bake-action so euro-office sees only the base file.
           files: |
             ./docker-bake.hcl
             ${{ matrix.brand.extra_bake_files }}
-          # extra_targets is either "" (euro-office) or "brand-icons," so the
-          # comma-joined target list resolves correctly for both.
           targets: ${{ matrix.brand.extra_targets }}packages,standalone,develop,cluster-utils,cluster-example,cluster-docs
           # push=false here; per-target pushing is controlled via tags below.
           # Targets with empty tags= are not pushed regardless of this flag.
@@ -273,41 +240,17 @@ jobs:
 
       - name: Upload packages to GitHub Release
         uses: softprops/action-gh-release@v2
-        if: matrix.brand.name == 'euro-office' && startsWith(github.ref, 'refs/tags/')
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           files: |
             build/deploy/packages/*.deb
             build/deploy/packages/*.rpm
 
-      - name: Upload packages via SSH (nextcloud-office)
-        if: matrix.brand.name == 'nextcloud-office' && startsWith(github.ref, 'refs/tags/')
-        env:
-          SSH_KEY:         ${{ secrets.NEXTCLOUD_SSH_KEY }}
-          SSH_HOST:        ${{ secrets.NEXTCLOUD_SSH_HOST }}
-          SSH_USER:        ${{ secrets.NEXTCLOUD_SSH_USER }}
-          SSH_PORT:        ${{ secrets.NEXTCLOUD_SSH_PORT || 22 }}
-          REMOTE_BASE:     ${{ secrets.NEXTCLOUD_SSH_REMOTE_PATH }}
-          PRODUCT_VERSION: ${{ steps.meta.outputs.product_version }}
-          BUILD_NUMBER:    ${{ steps.meta.outputs.build_number }}
-        run: |
-          set -euo pipefail
-          mkdir -p ~/.ssh
-          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_deploy
-          chmod 600 ~/.ssh/id_deploy
-          ssh-keyscan -p "$SSH_PORT" "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
-
-          TARGET="$REMOTE_BASE/$PRODUCT_VERSION/$BUILD_NUMBER"
-          ssh -i ~/.ssh/id_deploy -p "$SSH_PORT" "$SSH_USER@$SSH_HOST" "mkdir -p '$TARGET'"
-          scp -i ~/.ssh/id_deploy -P "$SSH_PORT" \
-            build/deploy/packages/*.deb build/deploy/packages/*.rpm \
-            "$SSH_USER@$SSH_HOST:$TARGET/"
-
   # ─────────────────────────────────────────────────────────────
   # MANIFEST
   #
-  # Merges the arch-specific images into multi-arch manifests for
-  # both brands. Runs on default branch (:nightly) and git tags
-  # (:latest + sanitised ref tag).
+  # Merges the arch-specific images into multi-arch manifests.
+  # Runs on default branch (:nightly) and git tags (:latest + sanitised ref tag).
   # ─────────────────────────────────────────────────────────────
   manifest:
     runs-on: ubuntu-latest
@@ -349,18 +292,13 @@ jobs:
 
           # Repos that follow the standard tagging scheme
           # (nightly on default branch, latest + ref on git tags).
-          # documentserver and nextcloud-office-documentserver also get
-          # :latest-dev on the default branch via the develop target;
+          # The documentserver image also gets :latest-dev on the default branch;
           # the cluster images do not.
           REPOS=(
             "${REGISTRY}/${{ env.IMAGE_NAME }}"
             "${REGISTRY}/${{ env.CLUSTER_IMG_DOCS }}"
             "${REGISTRY}/${{ env.CLUSTER_IMG_EXAMPLE }}"
             "${REGISTRY}/${{ env.CLUSTER_IMG_UTILS }}"
-            #"${REGISTRY}/${{ env.NEXTCLOUD_IMAGE_NAME }}"
-            #"${REGISTRY}/${{ env.NEXTCLOUD_CLUSTER_IMG_DOCS }}"
-            #"${REGISTRY}/${{ env.NEXTCLOUD_CLUSTER_IMG_EXAMPLE }}"
-            #"${REGISTRY}/${{ env.NEXTCLOUD_CLUSTER_IMG_UTILS }}"
           )
 
           if [[ "${{ github.ref_name }}" == "${{ github.event.repository.default_branch }}" ]]; then
@@ -368,7 +306,6 @@ jobs:
               create_manifest "$repo" "nightly"
             done
             create_manifest "${REGISTRY}/${{ env.IMAGE_NAME }}" "latest-dev"
-            #create_manifest "${REGISTRY}/${{ env.NEXTCLOUD_IMAGE_NAME }}" "latest-dev"
           fi
 
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
