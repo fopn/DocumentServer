@@ -13,6 +13,9 @@ set -euo pipefail
 export MSYS_NO_PATHCONV=1   # keep Docker volume paths intact on Windows git-bash
 
 DS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"   # repo root (this script lives in develop/)
+# Use Windows-style paths (C:/...) so BOTH git and Docker -v work under Git Bash.
+# cygpath exists in Git Bash; on Linux/macOS this leaves the path unchanged.
+command -v cygpath >/dev/null 2>&1 && DS_DIR="$(cygpath -m "$DS_DIR")"
 PARENT="$(dirname "$DS_DIR")"
 APP_DIR="$PARENT/eurooffice-nextcloud"
 APP_REPO="https://github.com/ryanmathew404/EuroOffice-FileOpen-Demo.git"
@@ -23,11 +26,6 @@ PREBUILT=0
 [ "${1:-}" = "--prebuilt" ] && PREBUILT=1
 COMPOSE_FILES="-f docker-compose.yml"
 [ "$PREBUILT" = "1" ] && COMPOSE_FILES="$COMPOSE_FILES -f docker-compose.prebuilt.yml"
-
-# On Windows Git Bash, Docker -v needs a Windows-style path (C:/...), not the
-# /c/... form. cygpath converts it; on Linux/macOS it is a no-op.
-APP_MOUNT="$APP_DIR"
-command -v cygpath >/dev/null 2>&1 && APP_MOUNT="$(cygpath -m "$APP_DIR")"
 
 if [ "$PREBUILT" = "1" ]; then
   echo "==> Editor: using prebuilt image ghcr.io/ryanmathew404/eurooffice-documentserver (no build)"
@@ -43,8 +41,8 @@ fi
 git -C "$APP_DIR" submodule update --init assets/document-templates assets/document-formats
 
 echo "==> 3/7  App dependencies: PHP vendor + built frontend"
-docker run --rm -v "$APP_MOUNT":/app -w /app composer:2 install --no-dev --ignore-platform-reqs --no-interaction
-docker run --rm -v "$APP_MOUNT":/app -w /app node:20 bash -lc "npm install --no-audit --no-fund && npm run build"
+docker run --rm -v "$APP_DIR":/app -w /app composer:2 install --no-dev --ignore-platform-reqs --no-interaction
+docker run --rm -v "$APP_DIR":/app -w /app node:20 bash -lc "npm install --no-audit --no-fund && npm run build"
 # The Vite build empties js/ before writing, which deletes the committed
 # fo-fileperms.js relay (the script that saves owner permissions). Restore it,
 # or the Protection tab will look like it works but nothing will save.
