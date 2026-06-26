@@ -1,0 +1,15 @@
+# Force LF line endings on everything that runs inside the Linux containers.
+# Without this, a clone on Windows gets CRLF, which breaks the shell scripts
+# (enable-office.sh, recompile-*.sh) and the nginx configs the moment they run.
+* text=auto eol=lf
+
+# Keep binary assets untouched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary

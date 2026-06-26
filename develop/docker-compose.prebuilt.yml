@@ -1,0 +1,10 @@
+# Overlay that swaps the document server for the prebuilt EuroOffice image,
+# which already has the FileOpen editor (Protection tab) compiled in. Using it
+# skips the slow, failure-prone in-container editor build completely.
+#
+# Bring up the stack with the prebuilt editor:
+#   docker compose -f docker-compose.yml -f docker-compose.prebuilt.yml up -d
+#
+services:
+  eo:
+    image: ghcr.io/ryanmathew404/eurooffice-documentserver:dev
