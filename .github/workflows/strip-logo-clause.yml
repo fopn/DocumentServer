@@ -24,6 +24,9 @@ on:
 
 jobs:
   prepare:
+    # Disabled in the fopn fork: Euro-Office org tooling (self-hosted runner +
+    # EURO_OFFICE_MIRROR_TOKEN + operates on Euro-Office/*). Set to true to re-enable.
+    if: false
     runs-on: self-hosted
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -38,6 +41,8 @@ jobs:
           fi
 
   strip:
+    # Disabled in the fopn fork (see `prepare`). Set to true to re-enable.
+    if: false
     needs: prepare
     runs-on: self-hosted
     strategy:

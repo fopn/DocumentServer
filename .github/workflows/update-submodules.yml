@@ -7,6 +7,10 @@ on:
 
 jobs:
   update-submodules:
+    # Disabled in the fopn fork for now: needs a runner (currently self-hosted) and
+    # the submodule branch map must be reconciled with .gitmodules before enabling.
+    # Set to true to re-enable.
+    if: false
     runs-on: self-hosted
     permissions:
       contents: write
