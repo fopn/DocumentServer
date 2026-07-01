@@ -10,6 +10,9 @@ on:
 
 jobs:
   build:
+    # Disabled in the fopn fork: Euro-Office org tooling (self-hosted runner +
+    # EURO_OFFICE_MIRROR_TOKEN + opens PRs in Euro-Office/*). Set to true to re-enable.
+    if: false
     runs-on: self-hosted
 
     strategy:
